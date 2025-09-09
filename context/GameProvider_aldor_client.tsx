@@ -79,7 +79,7 @@ type Ctx = {
   allocateStat:(attr:AttributeKey)=>void; train:(attr:AttributeKey)=>void;
   giveCoins:(p:Partial<CoinPouch>)=>void; takeCoins:(p:Partial<CoinPouch>)=>boolean;
   addItem:(i:Item,q?:number)=>void; removeItem:(id:string,q?:number)=>boolean;
-  buyItem:(i:Item,q?:number)=>boolean; sellItem:(id:string,q?:number)=>boolean; equip:(slot:any,item:Item)=>void; unequip:(slot:any)=>void;
+  buyItem:(i:Item,q?:number)=>boolean; sellItem:(id:string,q?:number)=>boolean;
   undertakeQuest:(q:Quest)=>{win:boolean; message:string}; completeQuest:(id:string)=>void; restAtInn:()=>void;
   advanceDay:(reason?:string)=>void;
   createGuildCard:(info:{name:string, origin:string, role:string, roleKey?:string, race?:string, raceKey?:string})=>boolean;
@@ -101,7 +101,7 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
     const loaded = loadGame<GameState>();
     if(loaded){
       const merged:any = { ...defaultState, ...loaded };
-      merged.player = { ...defaultPlayer, ...loaded.player } as any; if(!(merged.player as any).equipped) (merged.player as any).equipped = {};
+      merged.player = { ...defaultPlayer, ...loaded.player };
       // ensure keys exist
       merged.player.character = { ...defaultPlayer.character, ...merged.player.character };
       if(!merged.player.character.roleKey) merged.player.character.roleKey = 'guerreiro';
@@ -161,37 +161,34 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
     return true; };
 
   
-  // Equipment persistence
-  type SlotKey = 'cabeça'|'ombros'|'peito'|'mãos'|'cintura'|'pernas'|'pés'|'mão_principal'|'mão_secundária'|'anel_1'|'anel_2'|'amuleto'|'manto'|'acessório';
-  const equip = (slot: SlotKey, item: Item)=> setState(s=>{
-    const p:any = { ...s.player };
-    const eq:any = { ...(p.equipped||{}) };
-    // Compat: respeita isTwoHanded/slot
-    const twoH = (item as any).isTwoHanded === true || (item as any).twoHanded === true;
-    if (twoH){
-      eq['mão_principal'] = { itemId: item.id };
-      eq['mão_secundária'] = { itemId: item.id };
-    } else {
-      eq[slot] = { itemId: item.id };
-      // Se tentar equipar escudo na secundária, só mantém secundária
-      if (slot === 'mão_principal' && eq['mão_secundária']?.itemId === item.id){
-        // ok, já está em ambas (ex: item 2M antigo)
-      }
-    }
-    p.equipped = eq;
-    return { ...s, player: p, updatedAt: Date.now() } as any;
-  });
-  const unequip = (slot: SlotKey)=> setState(s=>{
-    const p:any = { ...s.player };
-    const eq:any = { ...(p.equipped||{}) };
-    delete eq[slot];
-    // se removendo mão_principal de 2M, limpa secundária se for o mesmo item
-    if (slot === 'mão_principal' && eq['mão_secundária'] && eq['mão_secundária'].itemId === (eq['mão_principal']?.itemId)){
-      delete eq['mão_secundária'];
-    }
-    p.equipped = eq;
-    return { ...s, player: p, updatedAt: Date.now() } as any;
-  });
+  // ---- Equip-based effective stats sync (ATQ/DEF/HP/CRIT) ----
+  function deriveBaseFromState(s: GameState): CharacterBase {
+    return {
+      STR: s.player?.attributes?.strength ?? 5,
+      AGI: s.player?.attributes?.agility ?? 5,
+      INT: s.player?.attributes?.intelligence ?? 5,
+      VIT: s.player?.attributes?.vitality ?? 5,
+      LUCK: s.player?.attributes?.luck ?? 5,
+      ATQ: s.player?.stats?.attack ?? 10,
+      DEF: s.player?.stats?.defense ?? 5,
+      CRIT: Math.round((s.player?.stats?.crit ?? 0) * 100),
+      DODGE: 0,
+      HP: s.player?.stats?.maxHp ?? 100,
+    };
+  }
+  function syncDerivedStats(s: GameState): GameState {
+    const base = deriveBaseFromState(s);
+    const equipped = (s.player as any)?.equipped ?? {} as EquippedState;
+    const skills: SkillsBonus = { bonuses: {} };
+    const eff = computeEffectiveStats(base, equipped, skills);
+    const p:any = { ...s.player, stats: { ...(s.player?.stats||{}) } };
+    p.stats.attack = eff.ATQ.total;
+    p.stats.defense = eff.DEF.total;
+    p.stats.maxHp = eff.HP.total;
+    // Provider guarda crit como fração 0..1 — convertemos do painel (0..100)
+    p.stats.crit = Math.min(0.75, Math.max(0, (eff.CRIT.total || 0) / 100));
+    return { ...s, player: p };
+  }
 // World clock
   const advanceDay=(reason?:string)=> setState(s=>{ const w=(s as any).world||defaultWorld; const dateMs=nextDay(w.dateMs); const w2={...w, dateMs, season:rollSeason(dateMs), ...rollWeather(dateMs)}; return {...s, world:w2, updatedAt:Date.now()} as any; });
 
@@ -245,7 +242,7 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
   const ctx: Ctx = {
     state, setState,
     addXP, levelUpIfNeeded, allocateStat, train,
-    giveCoins, takeCoins, addItem, removeItem, buyItem, sellItem, equip, unequip,
+    giveCoins, takeCoins, addItem, removeItem, buyItem, sellItem,
     undertakeQuest, completeQuest, restAtInn, advanceDay,
     createGuildCard, setHeaderStyle,
     exportSave: ()=>exportSave(state),

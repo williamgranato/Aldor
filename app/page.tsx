@@ -1,86 +1,67 @@
 // /app/page.tsx
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import PaperDoll from '@/components/PaperDoll';
 import InventoryPanel from '@/components/InventoryPanel';
 import EffectiveStatsPanel from '@/components/EffectiveStatsPanel';
 import { computeEffectiveStats, type EquippedState, type Item, type CharacterBase, type SkillsBonus } from '@/data/items_catalog';
-
-type ProviderAPI = {
-  getEquipped: () => EquippedState;
-  getInventory: () => Item[];
-  getBaseStats: () => CharacterBase;
-  getSkillsBonus: () => SkillsBonus;
-  equip: (slot: any, item: Item) => void;
-  unequip: (slot: any) => void;
-};
+import { useGame } from '@/context/GameProvider_aldor_client';
 
 export default function HomePage() {
-  const [api, setApi] = useState<ProviderAPI | null>(null);
-  const [equipped, setEquipped] = useState<EquippedState | undefined>(undefined);
-  const [inventory, setInventory] = useState<Item[]>([]);
-  const [baseStats, setBaseStats] = useState<CharacterBase | null>(null);
-  const [skills, setSkills] = useState<SkillsBonus>({ bonuses: {} });
+  const game = useGame(); // hook no topo, dentro do Provider (app/layout.tsx)
+  const s = game.state;
 
-  useEffect(() => {
-    let mounted = true;
-    function loadFromWindow() {
-      const h = typeof window !== 'undefined' ? (window as any).__aldorHook?.() : null;
-      if (!mounted) return;
-      if (h) {
-        const apiBuilt: ProviderAPI = {
-          getEquipped: () => h.equipped ?? {},
-          getInventory: () => h.inventory ?? [],
-          getBaseStats: () => (h.base ?? h.character ?? { STR:10, AGI:10, INT:10, VIT:10, LUCK:5, ATQ:10, DEF:10, CRIT:5, DODGE:5, HP:100 }),
-          getSkillsBonus: () => (h.skillsBonus ?? { bonuses: {} }),
-          equip: (slot, item) => h.equip?.(slot, item),
-          unequip: (slot) => h.unequip?.(slot),
-        };
-        setApi(apiBuilt);
-        setEquipped(apiBuilt.getEquipped());
-        setInventory(apiBuilt.getInventory());
-        setBaseStats(apiBuilt.getBaseStats());
-        setSkills(apiBuilt.getSkillsBonus());
-      } else {
-        setEquipped({});
-        setInventory([]);
-        setBaseStats({ STR:10, AGI:10, INT:10, VIT:10, LUCK:5, ATQ:10, DEF:10, CRIT:5, DODGE:5, HP:100 });
-        setSkills({ bonuses: {} });
-      }
-    }
-    loadFromWindow();
-    return () => { mounted = false; };
-  }, []);
+  // Inventário vem somente do provider
+  const inventory: Item[] = (s.player?.inventory ?? []) as any;
 
-  useEffect(() => {
-    if (!api) return;
-    const id = setInterval(() => {
-      setEquipped(api.getEquipped());
-      setInventory(api.getInventory());
-      setBaseStats(api.getBaseStats());
-      setSkills(api.getSkillsBonus());
-    }, 500);
-    return () => clearInterval(id);
-  }, [api]);
+  // Equipped vem do provider; converte para shape esperado (EquippedState)
+  const equipped: EquippedState = useMemo(() => {
+    const eq:any = s.player?.equipped ?? {};
+    // já está no formato { slot: { itemId } }, então só repassamos
+    return eq as EquippedState;
+  }, [s.player?.equipped]);
 
-  const eff = useMemo(() => {
-    if (!baseStats) return null;
-    return computeEffectiveStats(baseStats, equipped ?? {}, skills);
-  }, [baseStats, equipped, skills]);
+  // Base stats (mapeados do provider)
+  const base: CharacterBase = {
+    STR: s.player?.attributes?.strength ?? 5,
+    AGI: s.player?.attributes?.agility ?? 5,
+    INT: s.player?.attributes?.intelligence ?? 5,
+    VIT: s.player?.attributes?.vitality ?? 5,
+    LUCK: s.player?.attributes?.luck ?? 5,
+    ATQ: s.player?.stats?.attack ?? 10,
+    DEF: s.player?.stats?.defense ?? 5,
+    CRIT: Math.round((s.player?.stats?.crit ?? 0) * 100),
+    DODGE: 0,
+    HP: s.player?.stats?.maxHp ?? 100
+  };
+
+  const skills: SkillsBonus = { bonuses: {} };
+
+  const eff = useMemo(() => computeEffectiveStats(base, equipped ?? {}, skills), [base, equipped]);
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Coluna esquerda: Avatar + Atributos */}
+        <div className="space-y-3">
+          <div className="p-3 rounded-2xl bg-neutral-900/60 border border-neutral-800 flex items-center gap-3">
+            <img src="/images/avatar.png" alt="Aventureiro" title="Aventureiro" className="w-20 h-20 rounded-xl object-cover" />
+            <div>
+              <div className="text-sm font-semibold">{s.player?.character?.name ?? 'Aventureiro'}</div>
+              <div className="text-[11px] text-neutral-400">Toque nos slots ao lado para equipar</div>
+            </div>
+          </div>
+          <EffectiveStatsPanel stats={eff} />
+        </div>
+
+        {/* Coluna direita: PaperDoll/Slots */}
         <div className="lg:col-span-2">
           <PaperDoll
             equipped={equipped}
             inventory={inventory}
-            onEquip={(slot, item) => { game.equip?.(slot as any, item); /* persist */  api?.equip(slot, item); }}
-            onUnequip={(slot) => { game.unequip?.(slot as any); /* persist */  api?.unequip(slot); }}
+            onEquip={(slot, item) => { game.equip?.(slot as any, item); }}
+            onUnequip={(slot) => { game.unequip?.(slot as any); }}
           />
-        </div>
-        <div className="lg:col-span-1">
-          {eff ? <EffectiveStatsPanel stats={eff} /> : null}
         </div>
       </div>
 
@@ -89,15 +70,13 @@ export default function HomePage() {
           <div className="text-sm font-semibold">Inventário</div>
         </div>
         <InventoryPanel
-          items={inventory}
           view="grid"
           onEquip={(item) => {
             const slot = (item.slot ?? 'mão_principal') as any;
-            api?.equip(slot, item);
+            game.equip?.(slot, item);
           }}
-          onDiscard={(item) => { game.removeItem?.(item.id, 1); /* persist */ 
-            const anyApi: any = api as any;
-            anyApi?.discard?.(item);
+          onDiscard={(item) => {
+            game.removeItem?.(item.id, 1);
           }}
         />
       </div>
