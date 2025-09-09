@@ -137,3 +137,9 @@ Você pode evoluir:
 - Conectar frontend ao backend para persistir inventário.
 - Adicionar IA para gerar novos contratos/itens aleatórios.
 - Melhorar UI/UX com animações e ícones melhores.
+
+
+### Controles no Header (Sessão)
+- **Trocar save**: botão no topo (header) que chama `selectSlot(null)`, abrindo a **Seleção de Personagem**.
+- **Sair**: botão no topo que executa `logout()`, retornando à tela de **Login/Criar conta**.
+> Mantém layout e gradientes; sem dependências novas.

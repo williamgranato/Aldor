@@ -2,6 +2,7 @@
 import Image from 'next/image';
 import { useMemo } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
+import { useAuth } from '@/context/AuthProvider_aldor_client';
 import { rankColors, rankLabel as rankLabelImported } from '@/utils/rankStyle';
 import { CLASS_ICONS, RACE_ICONS } from '@/data/mushoku_expanded';
 import Tooltip from '@/components/Tooltip';
@@ -94,6 +95,19 @@ export default function HeaderModern(){
         </div>
 
         {/* Direita: Carteira com Tooltips */}
+
+          {/* Sessão: Trocar save / Sair */}
+          {(() => { try {
+            const { user, logout, selectSlot } = useAuth() as any;
+            if (!user) return null;
+            return (
+              <div className="flex items-center gap-2 ml-2">
+                <button onClick={()=> selectSlot(null)} className="px-2 py-1 text-xs rounded-md border border-slate-600 hover:bg-slate-800">Trocar save</button>
+                <button onClick={()=> logout()} className="px-2 py-1 text-xs rounded-md border border-rose-700 text-rose-300 hover:bg-rose-900/30">Sair</button>
+              </div>
+            );
+          } catch { return null; } })()}
+        
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3 text-sm">
             <Tooltip label="Ouro"><span className="flex items-center gap-1"><Image src="/images/items/gold.png" alt="Ouro" width={18} height={18} /> {coins.gold||0}</span></Tooltip>

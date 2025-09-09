@@ -2,6 +2,7 @@
 'use client';
 import Image from 'next/image';
 import { useGame } from '@/context/GameProvider_aldor_client';
+import { useAuth } from '@/context/AuthProvider_aldor_client';
 import { rankColors, rankLabel as rankLabelImported } from '@/utils/rankStyle';
 import { CLASS_ICONS, RACE_ICONS } from '@/data/mushoku_expanded';
 

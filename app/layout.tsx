@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import { ToastProvider } from '@/components/ToastProvider';
 import { GameProviderClient } from '@/context/GameProvider_aldor_client';
 import AppHeader from '@/components/AppHeader';
+import { AuthProvider } from '@/context/AuthProvider_aldor_client';
+import AuthGate from '@/components/AuthGate';
 import NavTabs from '@/components/NavTabs';
 
 export const metadata: Metadata = {
@@ -17,11 +19,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-black text-zinc-100">
         <ToastProvider>
           <GameProviderClient>
-            <AppHeader />
-            <NavTabs />
-            <div className="max-w-5xl mx-auto px-4 py-6">
-              {children}
-            </div>
+            <AuthProvider>
+              <AppHeader />
+              <NavTabs />
+              <div className="max-w-5xl mx-auto px-4 py-6">
+                {children}
+              </div>
+              <AuthGate />
+            </AuthProvider>
           </GameProviderClient>
         </ToastProvider>
       </body>

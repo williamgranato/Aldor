@@ -1,69 +1,125 @@
 'use client';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
-import { useToasts } from '@/components/ToastProvider';
+import { getPracaMissions } from '@/data/missoes';
+import { copperToCoins } from '@/utils/money_aldor_client';
+
+/** Fallback leve para exibir moedas sem depender de '@/components/common/Coin' */
+function CoinInline({ type, amount }: { type: 'gold'|'silver'|'bronze'|'copper'; amount: number }){
+  const src = `/images/items/${type}.png`;
+  return (
+    <span className="inline-flex items-center gap-1" title={type} aria-label={type}>
+      <img src={src} alt={type} className="w-4 h-4 object-contain" />
+      <span>{amount ?? 0}</span>
+    </span>
+  );
+}
+
+type Mission = ReturnType<typeof getPracaMissions>[number];
+
+function coinsView(copper: number){
+  const c = copperToCoins(copper);
+  return (
+    <span className="inline-flex items-center gap-2">
+      <CoinInline type="gold" amount={c.gold} />
+      <CoinInline type="silver" amount={c.silver} />
+      <CoinInline type="bronze" amount={c.bronze} />
+      <CoinInline type="copper" amount={c.copper} />
+    </span>
+  );
+}
 
 export default function PracaPage(){
-  const { state, setState, giveCoins, takeCoins } = useGame();
-  const { add } = useToasts();
+  const { state, addXP, giveCoins, addWorldTime, ADD_WORLD_TIME, advanceTime } = useGame() as any;
+  const missions = useMemo(()=> getPracaMissions(), []);
 
-  function coinsToCopper(c:any){
-    return (c.gold||0)*10000 + (c.silver||0)*100 + (c.bronze||0)*10 + (c.copper||0);
+  // Apenas 1 missão ativa por vez (trava local + pode coexistir com trava global)
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [remainingMs, setRemainingMs] = useState<number>(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // cleanup
+  useEffect(()=>()=> { if (timerRef.current) clearInterval(timerRef.current as any); }, []);
+
+  function startMission(m: Mission){
+    if (activeId) return;
+    setActiveId(m.id);
+    setRemainingMs(m.durationMs);
+    if (timerRef.current) clearInterval(timerRef.current as any);
+    timerRef.current = setInterval(()=>{
+      setRemainingMs(prev=>{
+        const next = prev - 1000;
+        if (next <= 0) {
+          clearInterval(timerRef.current as any);
+          finishMission(m);
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
   }
-  function giveCopper(n:number){
-    setState(s=>{
-      const c = (s.player.coins||{});
-      const tot = coinsToCopper(c)+n;
-      const gold = Math.floor(tot/10000);
-      const silver = Math.floor((tot%10000)/100);
-      const bronze = Math.floor((tot%100)/10);
-      const copper = tot%10;
-      return { ...s, player:{ ...s.player, coins:{ gold, silver, bronze, copper }}, updatedAt: Date.now() };
-    });
+
+  function finishMission(m: Mission){
+    // Recompensas
+    if (m.rewards?.xp) addXP(m.rewards.xp);
+    const copper = (m.rewards?.copper ?? 0) + (m.rewards?.coins?.copper ?? 0);
+    if (copper > 0) giveCoins({ copper });
+
+    // Avançar relógio do mundo se a ação existir (mantém compat com versões antigas)
+    const maybeAddWorldTime = (typeof addWorldTime==="function"?addWorldTime:(typeof (ADD_WORLD_TIME as any)==="function"?(ADD_WORLD_TIME as any):(typeof advanceTime==="function"?advanceTime:undefined))) as any;
+    if (typeof maybeAddWorldTime === 'function') {
+      try { maybeAddWorldTime(m.durationMs); } catch {}
+    }
+
+    setActiveId(null);
+    setRemainingMs(0);
   }
 
-  const playDice = ()=>{
-    if(!takeCoins({ copper:5 })){ add({type:'error', title:'Sem fundos', message:'Custa 5 cobre'}); return; }
-    const r = Math.ceil(Math.random()*6);
-    if(r>=5){ giveCopper(20); add({type:'success', title:'Dados', message:'Você tirou alto! +20 cobre'}); }
-    else if(r>=3){ giveCopper(8); add({type:'info', title:'Dados', message:'+8 cobre'}); }
-    else { add({type:'error', title:'Dados', message:'Nada desta vez.'}); }
-  };
-
-  const armWrestle = ()=>{
-    if(!takeCoins({ bronze:1 })){ add({type:'error', title:'Sem fundos', message:'Custa 1 bronze'}); return; }
-    const str = state.player.attributes.strength||0;
-    const r = Math.random()*100 + str*2;
-    if(r>120){ giveCopper(80); add({type:'success', title:'Braço de Ferro', message:'Vitória! +8 bronze (80 cobre)'}); }
-    else if(r>80){ giveCopper(30); add({type:'info', title:'Braço de Ferro', message:'+3 bronze (30 cobre)'}); }
-    else { add({type:'error', title:'Braço de Ferro', message:'Derrota.'}); }
-  };
-
-  const lottery = ()=>{
-    if(!takeCoins({ silver:1 })){ add({type:'error', title:'Sem fundos', message:'Bilhete custa 1 prata'}); return; }
-    const luck = state.player.attributes.luck||0;
-    const r = Math.random()*100 + luck;
-    if(r>180){ giveCopper(10000); add({type:'success', title:'Loteria da Feira', message:'JACKPOT! +1 ouro'}); }
-    else if(r>120){ giveCopper(1200); add({type:'info', title:'Loteria da Feira', message:'+12 prata'}); }
-    else if(r>90){ giveCopper(200); add({type:'info', title:'Loteria da Feira', message:'+2 prata'}); }
-    else { add({type:'error', title:'Loteria da Feira', message:'Não foi dessa vez.'}); }
-  };
+  function formatCountdown(ms: number){
+    const s = Math.max(0, Math.ceil(ms/1000));
+    return `${s}s`;
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="font-semibold">Praça da Cidade</div>
-      <div className="grid md:grid-cols-3 gap-3">
-        <button className="rounded-xl border px-3 py-3 text-left button" onClick={playDice}>
-          <div className="font-medium">Jogo de Dados</div>
-          <div className="text-xs opacity-70">Custo: 5 cobre • Recompensa: até 20 cobre</div>
-        </button>
-        <button className="rounded-xl border px-3 py-3 text-left button" onClick={armWrestle}>
-          <div className="font-medium">Braço de Ferro</div>
-          <div className="text-xs opacity-70">Custo: 1 bronze • Recompensa: até 8 bronze</div>
-        </button>
-        <button className="rounded-xl border px-3 py-3 text-left button" onClick={lottery}>
-          <div className="font-medium">Loteria da Feira</div>
-          <div className="text-xs opacity-70">Custo: 1 prata • Recompensa: até 1 ouro</div>
-        </button>
+    <div className="max-w-5xl mx-auto p-4 space-y-4">
+      <h1 className="text-xl font-semibold">Praça</h1>
+      <p className="text-white/80 text-sm">Tarefas simples que qualquer um pode fazer.</p>
+
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+        {missions.map(m=>{
+          const disabled = !!activeId;
+          const isActive = activeId === m.id;
+          const rewardCopper = (m.rewards?.copper ?? 0) + (m.rewards?.coins?.copper ?? 0);
+          return (
+            <div key={m.id} className="rounded-xl overflow-hidden bg-slate-900/50 border border-slate-800 hover:border-slate-600 transition">
+              <div className="aspect-[16/9] bg-gradient-to-br from-slate-800 to-slate-700 flex items-center justify-center">
+                <img src="/images/ui/praca_quest.png" alt="" className="h-24 object-contain opacity-90" />
+              </div>
+              <div className="p-3 space-y-2">
+                <div className="font-semibold">{m.title}</div>
+                <p className="text-sm text-white/80 line-clamp-2">{m.desc}</p>
+                <div className="text-xs text-white/70">Duração: {Math.round(m.durationMs/1000)}s</div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm flex items-center gap-2">
+                    <span>{m.rewards.xp} XP</span>
+                    <span className="opacity-70">·</span>
+                    {coinsView(rewardCopper)}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className={`px-3 py-1 rounded-md text-sm ${disabled && !isActive ? 'bg-slate-700 text-white/40 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}`}
+                      disabled={disabled && !isActive}
+                      onClick={()=> startMission(m)}
+                      title={disabled && !isActive ? 'Já há uma missão ativa' : 'Aceitar'}
+                    >
+                      {isActive ? `Em andamento (${formatCountdown(remainingMs)})` : 'Aceitar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
