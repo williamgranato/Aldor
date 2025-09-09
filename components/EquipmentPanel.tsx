@@ -1,37 +1,40 @@
-'use client';
-import { useGame } from '@/context/GameProvider_aldor_client';
-import { equipItem, unequip } from '@/utils/equipment';
+// /components/EquipmentPanel.tsx
+import React from 'react';
+import type { EquippedState } from '../data/items_catalog';
+import { ITEMS as CATALOG } from '../data/items_catalog';
+import ItemCard from './ItemCard';
 
-export default function EquipmentPanel(){
-  const { state, setState } = useGame();
-  const eq:any = (state.player as any).equipment || {};
-  const inv = state.player.inventory || [];
+type Props = {
+  /** Pode vir indefinido na primeira renderização — tratamos como objeto vazio */
+  equipped?: EquippedState;
+  onSelectSlot?: (slot: string) => void;
+};
 
-  function doEquip(id:string){ setState(s=> equipItem(s, id)); }
-  function doUnequip(slot:'weapon'|'armor'|'trinket'){ setState(s=> unequip(s, slot)); }
+const SLOTS = ['cabeça','ombros','peito','mãos','cintura','pernas','pés','mão_principal','mão_secundária','anel_1','anel_2','amuleto','manto','acessório'];
 
+export default function EquipmentPanel({ equipped, onSelectSlot }: Props) {
+  const eq = equipped ?? {}; // evita TypeError: reading 'cabeça' of undefined
   return (
-    <div className="rounded-xl border border-zinc-800 p-3 bg-zinc-900/40">
-      <div className="font-semibold mb-2">Equipamentos</div>
-
-      <div className="grid md:grid-cols-3 gap-3">
-        {(['weapon','armor','trinket'] as const).map(sl=>(
-          <div key={sl} className="rounded-lg border border-zinc-800 p-2">
-            <div className="text-xs opacity-70 uppercase">{sl}</div>
-            <div className="min-h-[2rem]">{eq[sl]?.name || <span className="opacity-60">vazio</span>}</div>
-            {eq[sl] && <button className="text-xs rounded border border-zinc-700 px-2 py-1 mt-1" onClick={()=>doUnequip(sl)}>Remover</button>}
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {SLOTS.map((slot) => {
+        const data = (eq as any)[slot];
+        const item = data ? CATALOG.find(i => i.id === data.itemId) : undefined;
+        return (
+          <div key={slot} className="p-2 rounded-xl bg-neutral-900/50 border border-neutral-800">
+            <div className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1">{slot.replace('_',' ')}</div>
+            {item ? (
+              <ItemCard item={item} onClick={() => onSelectSlot?.(slot)} />
+            ) : (
+              <div
+                className="h-16 rounded-xl bg-neutral-950/60 border border-dashed border-neutral-700 flex items-center justify-center text-neutral-500 cursor-pointer"
+                onClick={() => onSelectSlot?.(slot)}
+              >
+                vazio
+              </div>
+            )}
           </div>
-        ))}
-      </div>
-
-      <div className="mt-3 text-sm opacity-80">Inventário (clicar para equipar):</div>
-      <div className="grid md:grid-cols-3 gap-2 mt-2">
-        {inv.filter((x:any)=>['weapon','armor','trinket'].includes(x.type)).map((x:any, i:number)=>(
-          <button key={i} className="rounded border border-zinc-800 px-2 py-1 text-left hover:bg-zinc-900" onClick={()=>doEquip(x.id)}>
-            {x.name} {x.qty?`×${x.qty}`:''}
-          </button>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

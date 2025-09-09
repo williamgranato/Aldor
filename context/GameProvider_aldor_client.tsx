@@ -225,3 +225,8 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
 }
 
 export function useGame(){ const ctx=useContext(GameContext); if(!ctx) throw new Error('useGame must be used inside GameProviderClient'); return ctx; }
+
+// Exposição global opcional para integração sem imports dinâmicos
+if (typeof window !== 'undefined') {
+  (window as any).__aldorHook = useGame;
+}
