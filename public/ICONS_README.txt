@@ -1,0 +1,11 @@
+Crie os ícones (ou use provisórios) nestes caminhos:
+- public/images/ui/season/spring.png
+- public/images/ui/season/summer.png
+- public/images/ui/season/autumn.png
+- public/images/ui/season/winter.png
+- public/images/ui/weather/snow.png
+- public/images/ui/weather/rain.png
+- public/images/ui/weather/wind.png
+- public/images/ui/weather/cloud.png
+- public/images/ui/weather/sun.png
+- (fallback) public/images/ui/season/quest.png
