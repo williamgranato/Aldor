@@ -1,0 +1,86 @@
+// context/WorldClock_Additions.txt
+// Copie os blocos abaixo para dentro do seu GameProvider_aldor_client.tsx
+// (1) Tipos e default
+type WorldState = {
+  dateMs: number;          // Data do mundo (ms)
+  season: 'Primavera'|'Verão'|'Outono'|'Inverno';
+  weather: 'Ensolarado'|'Nublado'|'Chuva'|'Neve'|'Vento';
+  temperatureC: number;
+  lastMissionsDay?: string; // 'YYYY-MM-DD' do último generate
+};
+
+const defaultWorld: WorldState = {
+  dateMs: Date.now(),
+  season: 'Primavera',
+  weather: 'Ensolarado',
+  temperatureC: 22,
+};
+
+// (2) Helpers
+function ymd(ms:number){
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function nextDay(ms:number){
+  const d = new Date(ms);
+  d.setDate(d.getDate()+1);
+  return d.getTime();
+}
+
+function rollSeason(ms:number): WorldState['season']{
+  const m = new Date(ms).getMonth()+1;
+  if (m>=3 && m<=5) return 'Primavera';
+  if (m>=6 && m<=8) return 'Verão';
+  if (m>=9 && m<=11) return 'Outono';
+  return 'Inverno';
+}
+
+function rollWeather(ms:number): Pick<WorldState,'weather'|'temperatureC'>{
+  const m = new Date(ms).getMonth()+1;
+  const baseT = (m>=12||m<=2)? 14 : (m<=5? 20 : (m<=8? 28 : 18));
+  const seed = (ms >>> 8) % 5;
+  const weatherList: WorldState['weather'][] = ['Ensolarado','Nublado','Chuva','Vento','Ensolarado'];
+  const weather = weatherList[seed];
+  const delta = [-3,-1,0,1,3][seed];
+  return { weather, temperatureC: baseT + delta };
+}
+
+// (3) No defaultState, adicione: world: defaultWorld
+// (4) Na migração de save (on load), garanta:
+//    s.world = s.world || defaultWorld;
+
+// (5) Exponha função advanceDay e regen diário de missões:
+const advanceDay = (reason?:string)=> setState(s=>{
+  const w = s.world || defaultWorld;
+  const dateMs = nextDay(w.dateMs);
+  const season = rollSeason(dateMs);
+  const w2 = { ...w, dateMs, season, ...rollWeather(dateMs) };
+  return { ...s, world: w2, updatedAt: Date.now() };
+});
+
+// Gere missões novas quando trocar o dia:
+useEffect(()=>{
+  setState(s=>{
+    const w = s.world || defaultWorld;
+    const day = ymd(w.dateMs);
+    if (w.lastMissionsDay === day) return s;
+    // gere aqui: s.guild.activeQuests = generateDailyQuests(s.player.adventurerRank, day);
+    const guild = { ...s.guild, activeQuests: generateDailyQuests(s.player.adventurerRank, day) };
+    const world = { ...w, lastMissionsDay: day };
+    return { ...s, guild, world, updatedAt: Date.now() };
+  });
+}, []);
+
+// Chame advanceDay após completar missão (ou descansar, etc):
+//  - após completeQuest(): advanceDay('mission');
+//  - após restAtInn():     advanceDay('rest');
+
+// (6) Exporte advanceDay no contexto para uso em telas:
+/*
+  return (
+    <GameContext.Provider value={{ ..., advanceDay }}>
+      {children}
+    </GameContext.Provider>
+  );
+*/

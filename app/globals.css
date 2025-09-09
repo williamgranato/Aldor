@@ -2,11 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
+/* estilos globais adicionais */
+body {
+  @apply bg-black text-zinc-100;
 }
-body { @apply bg-black text-zinc-100; }
-a { @apply text-zinc-200 hover:text-white; }
-.container { @apply max-w-5xl mx-auto px-4; }
-.card { @apply rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4; }
-.button { @apply px-3 py-2 rounded-lg border border-zinc-700 hover:bg-zinc-800/50; }

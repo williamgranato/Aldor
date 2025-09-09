@@ -1,0 +1,1 @@
+Adicione rarity?: RarityKey e attrs?: Partial<{atk:number;def:number;hp:number;crit:number}> no tipo CatalogItem.

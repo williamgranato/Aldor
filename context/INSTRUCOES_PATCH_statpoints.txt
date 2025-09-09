@@ -1,0 +1,48 @@
+// context/GameProvider_aldor_client.tsx — patch para pontos de atributo
+// APLICAÇÃO: localize suas funções addXP e levelUpIfNeeded e substitua pelos blocos abaixo.
+
+export const NEED_XP = (L:number)=> Math.floor(100 * Math.pow(1.2, Math.max(0, L-1)));
+
+// Substitua sua levelUpIfNeeded por esta:
+const levelUpIfNeeded = ()=> setState(s=>{
+  let xp = Math.max(0, Math.floor(s.player.xp));
+  let level = Math.max(1, Math.floor(s.player.level));
+  let statPoints = Math.max(0, Math.floor(s.player.statPoints || 0));
+  let ups = 0;
+  let need = NEED_XP(level);
+  while(xp >= need){
+    xp -= need;
+    level++;
+    statPoints++;   // +1 ponto por nível ganho
+    ups++;
+    need = NEED_XP(level);
+  }
+  if(ups === 0) return s;
+  const gainHP = 5 * ups;
+  const newMax = (s.player.stats?.maxHp || 100) + gainHP;
+  const newStats = { ...(s.player.stats||{hp:100,maxHp:100,attack:10,defense:5,crit:0.05}), maxHp:newMax, hp:newMax };
+  return { ...s, player:{ ...s.player, xp, level, statPoints, stats:newStats }, updatedAt: Date.now() };
+});
+
+// Substitua sua addXP por esta (garante chamada do levelUp):
+const addXP = (n:number)=>{
+  setState(s=>({ ...s, player:{ ...s.player, xp: Math.max(0, Math.floor(s.player.xp + Math.floor(n))) }, updatedAt: Date.now() }));
+  // chama depois do setState para ler o novo XP
+  setTimeout(()=> levelUpIfNeeded(), 0);
+};
+
+// MIGRAÇÃO segura ao carregar o save (no efeito que carrega do storage):
+// after load:
+/*
+const loaded = loadGame<GameState>();
+if(loaded){
+  const migrated:any = { ...defaultState, ...loaded };
+  migrated.player = { ...defaultState.player, ...loaded.player };
+  // garantir campos
+  migrated.player.statPoints = typeof migrated.player.statPoints === 'number' ? migrated.player.statPoints : 0;
+  migrated.player.stats = migrated.player.stats || defaultState.player.stats;
+  migrated.player.stamina = migrated.player.stamina || defaultState.player.stamina;
+  migrated.player.status = migrated.player.status || [];
+  setState(prev=>({ ...prev, ...migrated }));
+}
+*/

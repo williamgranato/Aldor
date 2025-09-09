@@ -1,12 +1,10 @@
 'use client';
-import CharacterPanel from '@/components/CharacterPanel';
 import EquipmentPanel from '@/components/EquipmentPanel';
 import SettingsPanel from '@/components/SettingsPanel';
 
-export default function HomePage(){
+export default function PersonagemPage(){
   return (
     <div className="space-y-4">
-      <CharacterPanel />
       <EquipmentPanel />
       <SettingsPanel />
     </div>
