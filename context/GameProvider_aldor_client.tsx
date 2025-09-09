@@ -79,7 +79,7 @@ type Ctx = {
   allocateStat:(attr:AttributeKey)=>void; train:(attr:AttributeKey)=>void;
   giveCoins:(p:Partial<CoinPouch>)=>void; takeCoins:(p:Partial<CoinPouch>)=>boolean;
   addItem:(i:Item,q?:number)=>void; removeItem:(id:string,q?:number)=>boolean;
-  buyItem:(i:Item,q?:number)=>boolean; sellItem:(id:string,q?:number)=>boolean;
+  buyItem:(i:Item,q?:number)=>boolean; sellItem:(id:string,q?:number)=>boolean; equip:(slot:any,item:Item)=>void; unequip:(slot:any)=>void;
   undertakeQuest:(q:Quest)=>{win:boolean; message:string}; completeQuest:(id:string)=>void; restAtInn:()=>void;
   advanceDay:(reason?:string)=>void;
   createGuildCard:(info:{name:string, origin:string, role:string, roleKey?:string, race?:string, raceKey?:string})=>boolean;
@@ -101,7 +101,7 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
     const loaded = loadGame<GameState>();
     if(loaded){
       const merged:any = { ...defaultState, ...loaded };
-      merged.player = { ...defaultPlayer, ...loaded.player };
+      merged.player = { ...defaultPlayer, ...loaded.player } as any; if(!(merged.player as any).equipped) (merged.player as any).equipped = {};
       // ensure keys exist
       merged.player.character = { ...defaultPlayer.character, ...merged.player.character };
       if(!merged.player.character.roleKey) merged.player.character.roleKey = 'guerreiro';
@@ -160,7 +160,39 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
   const sellItem=(id:string,q:number=1)=>{ let price=0; setState(s=>{ const inv=[...s.player.inventory]; const idx=inv.findIndex(x=>x.id===id); if(idx<0) return s; const it=inv[idx]; const sellQty=Math.min(q,it.qty||1); price=Math.round((it.valueCopper||10)*0.6)*sellQty; const left=Math.max(0,(it.qty||0)-sellQty); if(left===0) inv.splice(idx,1); else inv[idx]={...it,qty:left}; return {...s, player:{...s.player, inventory:inv, coins:addPouch(s.player.coins, copperToCoins(price))}, updatedAt:Date.now()}; });
     return true; };
 
-  // World clock
+  
+  // Equipment persistence
+  type SlotKey = 'cabeça'|'ombros'|'peito'|'mãos'|'cintura'|'pernas'|'pés'|'mão_principal'|'mão_secundária'|'anel_1'|'anel_2'|'amuleto'|'manto'|'acessório';
+  const equip = (slot: SlotKey, item: Item)=> setState(s=>{
+    const p:any = { ...s.player };
+    const eq:any = { ...(p.equipped||{}) };
+    // Compat: respeita isTwoHanded/slot
+    const twoH = (item as any).isTwoHanded === true || (item as any).twoHanded === true;
+    if (twoH){
+      eq['mão_principal'] = { itemId: item.id };
+      eq['mão_secundária'] = { itemId: item.id };
+    } else {
+      eq[slot] = { itemId: item.id };
+      // Se tentar equipar escudo na secundária, só mantém secundária
+      if (slot === 'mão_principal' && eq['mão_secundária']?.itemId === item.id){
+        // ok, já está em ambas (ex: item 2M antigo)
+      }
+    }
+    p.equipped = eq;
+    return { ...s, player: p, updatedAt: Date.now() } as any;
+  });
+  const unequip = (slot: SlotKey)=> setState(s=>{
+    const p:any = { ...s.player };
+    const eq:any = { ...(p.equipped||{}) };
+    delete eq[slot];
+    // se removendo mão_principal de 2M, limpa secundária se for o mesmo item
+    if (slot === 'mão_principal' && eq['mão_secundária'] && eq['mão_secundária'].itemId === (eq['mão_principal']?.itemId)){
+      delete eq['mão_secundária'];
+    }
+    p.equipped = eq;
+    return { ...s, player: p, updatedAt: Date.now() } as any;
+  });
+// World clock
   const advanceDay=(reason?:string)=> setState(s=>{ const w=(s as any).world||defaultWorld; const dateMs=nextDay(w.dateMs); const w2={...w, dateMs, season:rollSeason(dateMs), ...rollWeather(dateMs)}; return {...s, world:w2, updatedAt:Date.now()} as any; });
 
   // Regen quests no mount e quando a data mudar
@@ -213,7 +245,7 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
   const ctx: Ctx = {
     state, setState,
     addXP, levelUpIfNeeded, allocateStat, train,
-    giveCoins, takeCoins, addItem, removeItem, buyItem, sellItem,
+    giveCoins, takeCoins, addItem, removeItem, buyItem, sellItem, equip, unequip,
     undertakeQuest, completeQuest, restAtInn, advanceDay,
     createGuildCard, setHeaderStyle,
     exportSave: ()=>exportSave(state),
@@ -225,8 +257,3 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
 }
 
 export function useGame(){ const ctx=useContext(GameContext); if(!ctx) throw new Error('useGame must be used inside GameProviderClient'); return ctx; }
-
-// Exposição global opcional para integração sem imports dinâmicos
-if (typeof window !== 'undefined') {
-  (window as any).__aldorHook = useGame;
-}
