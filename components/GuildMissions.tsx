@@ -10,6 +10,15 @@ type Rank = 'F'|'E'|'D'|'C'|'A'|'S'|'SS';
 const DUR_BY_RANK: Record<Rank, number> = { F:3, E:4, D:5, C:6, A:7, S:10, SS:15 };
 const STAMINA_BY_RANK: Record<Rank, number> = { F:5, E:10, D:20, C:40, A:80, S:160, SS:320 };
 
+// ===== Helpers de Rank e Regra de Liberação (±1) =====
+const RANK_ORDER: Rank[] = ['F','E','D','C','A','S','SS'];
+const rankIdx = (r:Rank)=> RANK_ORDER.indexOf(r);
+const isAllowedForPlayer = (playerRank: Rank, missionRank: Rank) => {
+  const i = rankIdx(playerRank), j = rankIdx(missionRank);
+  if(i<0 || j<0) return false;
+  return Math.abs(i-j) <= 1;
+};
+
 type Mission = {
   id: string;
   title: string;
@@ -91,6 +100,14 @@ function missionCatalog(): Mission[]{
 
 export default function GuildMissions(){
   const { state, setState } = useGame();
+
+  // estado derivado
+  const myRankRaw:any = (state as any).player?.adventurerRank || 'F';
+  const myRank = (RANK_ORDER.includes(myRankRaw) ? myRankRaw : 'F') as Rank;
+  const busyUntil:number = (state as any).guild?.busyUntilMs || 0;
+  const activeMission:any = (state as any).guild?.activeMission || null;
+  const now = typeof window!=='undefined' ? Date.now() : 0;
+  const busyRemaining = Math.max(0, (busyUntil||0) - now);
   const world = state.world;
   const grad = seasonGradient?.[world?.season || 'Primavera'] || 'bg-zinc-900';
 
@@ -107,13 +124,21 @@ export default function GuildMissions(){
       if(sortBy==='xp') return (b.rewards?.xp||0)-(a.rewards?.xp||0);
       const ad=(a.drops?.length||0), bd=(b.drops?.length||0); return bd-ad;
     });
-    return list;
+    return list.filter(m=> isAllowedForPlayer(myRank, m.requiredRank));
   },[rankFilter, sortBy]);
 
   // aprendizado por missão (persistido no save em guild.learning[missionId])
   const getLearn = (id:string)=> (state as any).guild?.learning?.[id] || 0;
 
   const acceptOnce = (m:Mission)=>{
+    // bloqueios: membro, 1 missão por vez, rank permitido
+    if(!(state as any).guild?.isMember){ if(typeof window!=='undefined') alert('Apenas membros da guilda podem aceitar contratos.'); return; }
+    const pr:any = (state as any).player?.adventurerRank || 'F';
+    const prk = (RANK_ORDER.includes(pr)?pr:'F') as Rank;
+    if(!isAllowedForPlayer(prk, m.requiredRank)){ if(typeof window!=='undefined') alert(`Missão ${m.requiredRank} não é permitida para seu rank ${prk}.`); return; }
+    const nowMs = typeof window!=='undefined' ? Date.now() : 0;
+    if(((state as any).guild?.busyUntilMs||0) > nowMs){ if(typeof window!=='undefined') alert('Você já está em uma missão. Aguarde terminar.'); return; }
+
     const cost = STAMINA_BY_RANK[m.requiredRank];
     const dur = DUR_BY_RANK[m.requiredRank];
     setState(s=>{
@@ -129,6 +154,11 @@ export default function GuildMissions(){
       const w:any = { ...(s as any).world };
       w.dateMs = (w.dateMs||Date.now()) + dur*1000;
       s2.world = w;
+      // bloqueia novas missões até terminar a atual
+      const startedAt = Date.now();
+      const endsAt = startedAt + dur*1000;
+      s2.guild = { ...(s2.guild||{}), busyUntilMs: endsAt, activeMission: { id:m.id, title:m.title, requiredRank:m.requiredRank, startedAt, endsAt } } as any;
+
 
       // calcula chance
       const learned = (s2.guild?.learning?.[m.id]||0);
@@ -204,6 +234,19 @@ export default function GuildMissions(){
     <div className={`rounded-2xl p-4 border border-amber-800/30 ${grad}`}>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="text-amber-200 font-semibold text-lg">Mural de Contratos</div>
+        {busyRemaining>0 && (
+          <div className="w-full">
+            <div className="text-xs text-amber-200 mb-1">Missão em andamento: {activeMission?.title || 'Contrato'}</div>
+            <div className="h-2 w-full bg-zinc-800/70 rounded overflow-hidden">
+              <div
+                className="h-2 bg-amber-500 transition-all"
+                style={{ width: `${Math.max(0, 100 - (busyRemaining / ((activeMission?.endsAt||now) - (activeMission?.startedAt||now))) * 100)}%` }}
+              />
+            </div>
+            <div className="text-[10px] opacity-70 mt-1">Termina em {(busyRemaining/1000).toFixed(1)}s</div>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 text-xs">
           <label>Rank:</label>
           {(['ALL','F','E','D','C','A','S','SS'] as const).map(r=>(
@@ -239,7 +282,9 @@ export default function GuildMissions(){
                 {typeof m.risk==='number' && <span>⚠️ Risco: {m.risk}</span>}
               </div>
               <div className="mt-2 flex items-center gap-2">
-                <button onClick={()=>acceptOnce(m)} className="px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-black text-sm font-semibold">Aceitar</button>
+                <button onClick={()=>acceptOnce(m)} className="px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-black text-sm font-semibold" disabled={busyRemaining>0 || !isAllowedForPlayer(myRank, m.requiredRank)}>
+                  {busyRemaining>0 ? 'Aguardando...' : 'Aceitar'}
+                </button>
                 {loopingId===m.id
                   ? <button onClick={stopLoop} className="px-2 py-1 rounded border border-amber-600 text-amber-300 text-sm">Parar</button>
                   : <button onClick={()=>runLoop(m)} className="px-2 py-1 rounded border border-amber-600 text-amber-300 text-sm">Loop</button>
