@@ -5,8 +5,8 @@ Protótipo de RPG idle/managerial inspirado em mundos de fantasia medieval (Mush
 ## ⚙️ Stack e Estrutura
 - **Next.js 14** + **React 18**
 - **TailwindCSS**
-- **Prisma + SQLite** (rota `/api/players`)
-- **Autosave multi-slot**: até 5 saves por usuário (`userId:slot:playerId`), persistido localmente e via API.
+- **SQLite local (autosave client-side)** — sem API/Prisma
+- **Autosave multi-slot**: até 5 saves por usuário (`userId:slot:playerId`), persistido localmente no navegador.
 
 ## 🎮 Gameplay e Features
 - **Atributos do jogador**: força, destreza, vigor, arcano, carisma, sagacidade.
@@ -77,3 +77,7 @@ Protótipo de RPG idle/managerial inspirado em mundos de fantasia medieval (Mush
 - **Validação rigorosa em imports**: sempre separar `React` e `rankProgress`.  
 - **Manter compatibilidade entre Praça e Guilda** (missões).  
 - **Itens, inventário, moedas, XP, atributos, skills, debuffs, afinidades e contratos devem sempre ser player-scoped.**
+
+## 📜 Histórico
+- Versão inicial previa API `/api/players` com Prisma + SQLite.
+- **Simplificado para singleplayer**: hoje usa apenas autosave local multi-slot, sem backend/API.

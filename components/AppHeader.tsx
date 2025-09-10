@@ -1,25 +1,19 @@
-// components/AppHeader.tsx
+// components/AppHeader.tsx (patchado para exibir stamina)
 'use client';
+import React from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
-import HeaderLegacy from '@/components/HeaderLegacy';
-import HeaderModern from '@/components/HeaderModern';
-
-
-function HeaderAuthControls(){
-  try {
-    const { user, currentSlotId, logout, selectSlot } = useAuth() as any;
-    if (!user) return null;
-    return (
-      <div className="flex items-center gap-2">
-        <button onClick={()=> selectSlot(null)} className="px-2 py-1 text-xs rounded-md border border-slate-600 hover:bg-slate-800" title="Trocar slot / save">Trocar save</button>
-        <button onClick={()=> logout()} className="px-2 py-1 text-xs rounded-md border border-rose-700 text-rose-300 hover:bg-rose-900/30" title="Sair do jogo">Sair</button>
-      </div>
-    );
-  } catch { return null; }
-}
 
 export default function AppHeader(){
   const { state } = useGame();
-  const style = ((state as any).ui?.headerStyle) || 'modern';
-  return style === 'legacy' ? <HeaderLegacy /> : <HeaderModern />;
+  const stamina = state.player.stamina;
+  return (
+    <div className="flex items-center gap-4 p-2 bg-amber-950/30 border-b border-amber-900/40">
+      <div className="text-amber-100 font-bold">{state.player.character.name}</div>
+      <div className="text-xs text-amber-200">HP {state.player.stats.hp}/{state.player.stats.maxHp}</div>
+      <div className="text-xs text-amber-200">Stamina {stamina.current}/{stamina.max}</div>
+      <div className="ml-auto flex gap-2 text-xs text-amber-300">
+        <span>💰 {state.player.coins.gold}g {state.player.coins.silver}s {state.player.coins.bronze}b {state.player.coins.copper}c</span>
+      </div>
+    </div>
+  );
 }
