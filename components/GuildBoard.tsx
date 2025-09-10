@@ -1,5 +1,5 @@
-'use client';
 // components/GuildBoard.tsx
+'use client';
 import React, { useMemo, useState, useEffect } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import { MISSIONS, type Mission } from '@/data/missions_catalog';
@@ -97,9 +97,14 @@ export default function GuildBoard(){
   };
 
   // Próximo rank
-  const completedAtOrAbove = countCompletedAtOrAbove(state.guild.completedQuests as any || [], playerRank as any);
-  const promo = canPromote(playerRank as any, completedAtOrAbove);
-  const nextRank = promo.ok ? promo.next : null;
+const completedAtOrAbove = countCompletedAtOrAbove(
+  (state.guild?.completedQuests as any) || [],
+  playerRank as any
+);
+const promo = canPromote(playerRank as any, completedAtOrAbove);
+const nextRank = promo.ok ? promo.next : null;
+
+    const need = nextRank && (rankThresholds as any)[playerRank] !== undefined ? (rankThresholds as any)[playerRank] : undefined;
 
   // Histórico
   const history = useMemo(()=>{
@@ -116,7 +121,6 @@ export default function GuildBoard(){
         <div className="text-amber-100 font-semibold">Quadro de Contratos</div>
         <div className="text-xs opacity-80">
           Próximo Rank: <span className="font-semibold">{nextRank || '—'}</span>
-          {nextRank && (()=>{ const need=(rankThresholds as any)[playerRank]; const falta=need-(completedAtOrAbove||0); return <span className='opacity-70'> ({falta>0?`faltam ${falta} contratos`:'pronto para promoção!'})</span>; })()}
           
         </div>
       </div>

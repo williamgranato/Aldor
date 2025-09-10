@@ -60,6 +60,7 @@ export type Quest = {
 export type PlayerState = {
   id: string;
   missionAffinity?: Record<string, number>;
+  npcAffinity?: Record<string, number>;
   character: Character;
   guildRank: number;
   adventurerRank: Rank | string;
@@ -77,7 +78,7 @@ export type PlayerState = {
 
 export type GuildState = {
   isMember: boolean;
-  completedQuests: { id: string; at: number }[];
+  completedQuests: { id: string; rank: Rank; at: number }[];
   activeQuests: Quest[];
   memberCard?: {
     name: string;
