@@ -1,105 +1,87 @@
-// components/GuildCard.tsx
 'use client';
-import { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
-import { MT_REGIONS, MT_CLASSES, MT_RACES, CLASS_ICONS, RACE_ICONS } from '@/data/mushoku_expanded';
+import { seasonGradient } from '@/utils/seasonStyle';
+import { MT_REGIONS } from '@/data/mushoku_expanded';
 
 export default function GuildCard(){
   const { state, createGuildCard } = useGame();
-  const isMember = state.guild.isMember;
-  const card:any = (state.guild as any).memberCard;
+  const isMember = state.guild?.isMember;
+  const rank = state.player?.adventurerRank || 'Sem Guilda';
+  const world = state.world;
+  const grad = seasonGradient?.[world?.season || 'Primavera'] || 'bg-zinc-900';
 
-  const [name, setName] = useState(state.player.character.name || '');
-  const [origin, setOrigin] = useState('');
-  const [roleKey, setRoleKey] = useState(MT_CLASSES[0].key as any);
-  const [raceKey, setRaceKey] = useState(MT_RACES[0].key as any);
-  const [msg, setMsg] = useState('');
+  // gera lista plana de cidades para valor inicial
+  const allCities: string[] = MT_REGIONS.flatMap((cont:any) =>
+    cont.grupos.flatMap((grupo:any) =>
+      grupo.cidades.map((cidade:string) => cidade)
+    )
+  );
+
+  const [origin,setOrigin] = useState(allCities[0] || '');
+  const [role,setRole] = useState('Espadachim');
+  const [aptidao, setAptidao] = useState<number|null>(null);
 
   useEffect(()=>{
-    if (state.player?.character?.name) setName(state.player.character.name);
-  }, [state.player?.character?.name]);
+    const val = Math.floor(Math.min(500, Math.max(0, Math.round(250 + (Math.random()-0.5)*200))));
+    setAptidao(val);
+  },[]);
 
-  const roleLabel = useMemo(()=> MT_CLASSES.find(c=>c.key===roleKey)?.label || '', [roleKey]);
-  const raceLabel = useMemo(()=> MT_RACES.find(r=>r.key===raceKey)?.label || '', [raceKey]);
-
-  const onCreate = ()=>{
-    const ok = createGuildCard({ name: name.trim(), origin, role: roleLabel, roleKey, race: raceLabel, raceKey });
-    if(!ok){ setMsg('Saldo insuficiente para a taxa de inscrição (1 prata).'); }
+  const handleJoin = ()=>{
+    const info = {
+      name: state.player?.character?.name || 'Aventureiro',
+      origin, role, roleKey: role.toLowerCase()
+    };
+    const ok = createGuildCard(info);
+    if(ok){
+      alert(`Bem-vindo à Guilda dos Aventureiros! Rank inicial F. Aptidão mágica: ${aptidao}`);
+    }
   };
 
-  if(isMember && card){
-    return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-        <div className="text-sm opacity-80 mb-2">Cartão do Aventureiro</div>
-        <div className="grid md:grid-cols-2 gap-3 items-center">
-          <div><b>Nome:</b> {card.name}</div>
-          <div><b>Origem:</b> {card.origin}</div>
-          <div className="flex items-center gap-2">
-            <b>Classe:</b> <Image src={CLASS_ICONS[roleKey] || '/images/ui/classes/guerreiro.png'} alt="Classe" width={18} height={18} /> {card.role}
-          </div>
-          <div className="flex items-center gap-2">
-            <b>Raça:</b> <Image src={RACE_ICONS[raceKey] || '/images/ui/races/humano.png'} alt="Raça" width={18} height={18} /> {card.race || raceLabel}
-          </div>
-          <div><b>Rank:</b> {card.rank}</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="font-semibold">Inscrição na Guilda</div>
-        <div className="text-sm flex items-center gap-1" title="Taxa de inscrição">
-          <span>Taxa:</span>
-          <Image src="/images/items/silver.png" alt="Prata" width={18} height={18} />
-          <b>1</b>
+    <div className={`rounded-2xl p-4 border border-amber-800/30 ${grad}`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-amber-200 font-semibold text-lg">Guilda de Aldor</div>
+          <div className="text-sm opacity-80">Status: {isMember ? 'Membro ativo' : 'Não-membro'}</div>
+          <div className="text-sm opacity-80">Rank: <span className="font-semibold">{rank}</span></div>
+          {isMember && state.guild?.memberCard && (
+            <div className="text-xs opacity-70 mt-2">
+              Cidade: {state.guild.memberCard.origin} • Vocação: {state.guild.memberCard.role}
+            </div>
+          )}
         </div>
+        {!isMember && (
+          <button onClick={handleJoin} className="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-black font-bold shadow">
+            Registrar (1 prata)
+          </button>
+        )}
       </div>
-
-      <div className="grid md:grid-cols-4 gap-3">
-        <div>
-          <label className="text-xs opacity-80">Nome</label>
-          <input value={name} onChange={e=>setName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1" />
-        </div>
-        <div>
-          <label className="text-xs opacity-80">Origem (Reino • Cidade)</label>
-          <select value={origin} onChange={e=>setOrigin(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1">
-            <option value="" disabled>Selecione uma cidade</option>
-            {MT_REGIONS.map(r=>(
-              <optgroup key={r.continente} label={r.continente}>
-                {r.grupos.map(g=> g.cidades.map(c=>(
-                  <option key={`${g.reino}-${c}`} value={`${g.reino} • ${c}`}>{g.reino} • {c}</option>
-                )))}
-              </optgroup>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs opacity-80">Classe</label>
-          <div className="flex items-center gap-2">
-            <Image src={CLASS_ICONS[roleKey] || '/images/ui/classes/guerreiro.png'} alt="Classe" width={20} height={20} />
-            <select value={roleKey} onChange={e=>setRoleKey(e.target.value as any)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1">
-              {MT_CLASSES.map(c=>(<option key={c.key} value={c.key as any}>{c.label}</option>))}
+      {!isMember && (
+        <div className="mt-3 space-y-2 text-sm">
+          <label>Cidade de Nascimento:
+            <select value={origin} onChange={e=>setOrigin(e.target.value)} className="ml-2 p-1 bg-amber-950 border border-amber-700 rounded">
+              {MT_REGIONS.map((cont:any, idx:number)=>(
+                <optgroup key={idx} label={cont.continente}>
+                  {cont.grupos.map((grupo:any)=>
+                    grupo.cidades.map((cidade:string)=>(
+                      <option key={`${grupo.reino}-${cidade}`} value={cidade}>
+                        [{grupo.reino}] {cidade}
+                      </option>
+                    ))
+                  )}
+                </optgroup>
+              ))}
             </select>
-          </div>
-        </div>
-        <div>
-          <label className="text-xs opacity-80">Raça</label>
-          <div className="flex items-center gap-2">
-            <Image src={RACE_ICONS[raceKey] || '/images/ui/races/humano.png'} alt="Raça" width={20} height={20} />
-            <select value={raceKey} onChange={e=>setRaceKey(e.target.value as any)} className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1">
-              {MT_RACES.map(r=>(<option key={r.key} value={r.key as any}>{r.label}</option>))}
+          </label><br/>
+          <label>Vocação:
+            <select value={role} onChange={e=>setRole(e.target.value)} className="ml-2 p-1 bg-amber-950 border border-amber-700 rounded">
+              {['Espadachim','Mago','Healer','Tanker','Ladrão','Invocador'].map(c=><option key={c}>{c}</option>)}
             </select>
-          </div>
+          </label><br/>
+          <div suppressHydrationWarning>Aptidão mágica sorteada: {aptidao ?? '...'}</div>
         </div>
-      </div>
-
-      <div className="mt-3 flex items-center gap-2">
-        <button onClick={onCreate} className="button">Criar Cartão</button>
-        {msg && <div className="text-xs text-rose-300">{msg}</div>}
-      </div>
+      )}
     </div>
   );
 }

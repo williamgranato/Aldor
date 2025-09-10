@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader';
 import { AuthProvider } from '@/context/AuthProvider_aldor_client';
 import AuthGate from '@/components/AuthGate';
 import NavTabs from '@/components/NavTabs';
+import DebugOverlay from '@/components/DebugOverlay';
 
 export const metadata: Metadata = {
   title: 'Aldor',
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="max-w-5xl mx-auto px-4 py-6">
                 {children}
               </div>
+              <DebugOverlay />
               <AuthGate />
             </AuthProvider>
           </GameProviderClient>

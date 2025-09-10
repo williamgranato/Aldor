@@ -29,3 +29,6 @@ export function countCompletedAtOrAbove(completed: {id:string, rank:Rank}[], cur
   const idx = order.indexOf(current);
   return completed.filter(x=> order.indexOf(x.rank)>=idx ).length;
 }
+
+export const rankThresholds = THRESHOLDS as const;
+export function getThreshold(current: Rank){ return (THRESHOLDS as any)[current]; }

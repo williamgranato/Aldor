@@ -115,16 +115,32 @@ export function AuthProvider({ children }:{children:React.ReactNode}){
     if (currentSlotId===id){ setCurrentSlotId(null); saveSession({ userId: user!.id }); }
   }
   async function createNewCharacter(name:string, options?:any){
-    // estado inicial simples reaproveitando estrutura atual
-    const initial = { ...state, player: { ...state.player, character: { ...(state.player.character||{}), name } }, updatedAt: Date.now() };
-    setState(initial as any);
-    // salvar no primeiro slot vazio
-    const taken = new Set((profile?.slots||[]).map(s=>s.id));
-    const free = ([1,2,3,4,5] as const).find(id => !taken.has(id));
-    if (!free) return { ok:false };
-    saveSlotFn(free, name);
-    return { ok:true, slotId: free };
-  }
+  const base:any = {
+    player: {
+      id: crypto.randomUUID(),
+      character: { ...(state.player?.character||{}), name },
+      adventurerRank: 'Sem Guilda',
+      xp: 0, level: 1, statPoints: 0,
+      attributes: { strength:5, agility:5, intelligence:5, vitality:5, luck:5 },
+      stats: { hp:100, maxHp:100, attack:10, defense:5, crit:0.05 },
+      stamina: { current:10, max:10, lastRefillDay: 0 },
+      status: [],
+      coins: { gold:0, silver:0, bronze:0, copper:0 },
+      inventory: [],
+      skills: {},
+      missionAffinity: {},
+      npcAffinity: {}
+    },
+    guild: { completedQuests: [] },
+    updatedAt: Date.now()
+  };
+  setState(base as any);
+  const taken = new Set((profile?.slots||[]).map(s=>s.id));
+  const free = ([1,2,3,4,5] as const).find(id => !taken.has(id));
+  if(!free) return { ok:false };
+  saveSlotFn(free, name);
+  return { ok:true, slotId: free };
+}
   function exportSlot(id:1|2|3|4|5){
     if (!profile) return;
     const sl = profile.slots.find(s=>s.id===id); if (!sl) return;

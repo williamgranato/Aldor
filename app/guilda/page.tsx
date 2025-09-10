@@ -1,5 +1,5 @@
-// app/guilda/page.tsx
 'use client';
+// app/guilda/page.tsx
 import GuildCard from '@/components/GuildCard';
 import GuildBoard from '@/components/GuildBoard';
 import { useGame } from '@/context/GameProvider_aldor_client';
