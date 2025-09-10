@@ -2,11 +2,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { GameState, PlayerState, Item, Quest, CoinPouch, AttributeKey, SaveBlob } from '@/types_aldor_client';
 import { coinsToCopper, copperToCoins, addPouch } from '@/utils/money_aldor_client';
-import { canPromote, countCompletedAtOrAbove } from '@/utils/rankProgress';
 import { simulateCombat, enemyForRank } from '@/utils/combat_aldor_client';
 import { generateDailyQuests } from '@/utils/dailyQuests_aldor_client';
 import { rankOrder } from '@/utils/rankStyle';
+import { canPromote, countCompletedAtOrAbove } from '@/utils/rankProgress';
 import { useToasts } from '@/components/ToastProvider';
+import { getSession } from '@/utils/auth_local_aldor_client';
 
 export type Season = 'Primavera'|'Verão'|'Outono'|'Inverno';
 export type Weather = 'Ensolarado'|'Nublado'|'Chuva'|'Neve'|'Vento';
@@ -103,6 +104,7 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
     if(loaded){
       const merged:any = { ...defaultState, ...loaded };
       merged.player = { ...defaultPlayer, ...loaded.player };
+    if(!merged.player.id){ merged.player.id = (typeof crypto!=='undefined'&&crypto.randomUUID)? crypto.randomUUID(): String(Date.now()); }
       // ensure keys exist
       merged.player.character = { ...defaultPlayer.character, ...merged.player.character };
       if(!merged.player.character.roleKey) merged.player.character.roleKey = 'guerreiro';
@@ -120,6 +122,21 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
   },[]);
 
   // Auto-save
+// Revalida rank ao carregar e em mudanças de histórico (por slot/jogador)
+useEffect(()=>{
+  try{
+    setState(s=>{
+      const cur = s.player?.adventurerRank as any;
+      const cnt = countCompletedAtOrAbove((s.guild?.completedQuests as any)||[], cur);
+      const pr = canPromote(cur, cnt);
+      if (pr?.ok && pr.next && pr.next!==cur){
+        return { ...s, player: { ...s.player, adventurerRank: pr.next as any }, updatedAt: Date.now() };
+      }
+      return s;
+    });
+  }catch{}
+}, [state.guild?.completedQuests?.length]);
+
   useEffect(()=>{
     if (typeof window === 'undefined') return;
     setIsSaving(true);
@@ -254,4 +271,8 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
   return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;
 }
 
-export function useGame(){ const ctx=useContext(GameContext); if(!ctx) throw new Error('useGame must be used inside GameProviderClient'); return ctx; }
+export function useGame(){
+  const ctx = useContext(GameContext);
+  if(!ctx) throw new Error('useGame must be used inside GameProviderClient');
+  return ctx;
+}

@@ -1,5 +1,5 @@
-// components/GuildCard.tsx
 'use client';
+// components/GuildCard.tsx
 import React, { useMemo } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import { seasonGradient } from '@/utils/seasonStyle';

@@ -26,6 +26,8 @@ type Ctx = {
 
 const AuthCtx = createContext<Ctx|null>(null);
 
+function uuidv4(){ if(typeof crypto!=='undefined'&&crypto.randomUUID) return crypto.randomUUID(); const s=()=>Math.floor((1+Math.random())*0x10000).toString(16).substring(1); return `${s()}${s()}-${s()}-${s()}-${s()}-${s()}${s()}${s()}`; }
+
 export function AuthProvider({ children }:{children:React.ReactNode}){
   const { state, setState } = useGame();
   const [user, setUser] = useState<User|null>(null);

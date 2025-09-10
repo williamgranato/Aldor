@@ -1,8 +1,9 @@
-// components/GuildBoard.tsx
 'use client';
+// components/GuildBoard.tsx
 import React, { useMemo, useState, useEffect } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import { MISSIONS, type Mission } from '@/data/missions_catalog';
+import { getMissionLore } from '@/utils/mission_lore';
 import { canPromote, countCompletedAtOrAbove, rankThresholds } from '@/utils/rankProgress';
 
 type VMission = Mission & { successChance?: number; npc?: {name:string, cls:string, bonus:number} };
@@ -32,6 +33,11 @@ function rollNPC(seed:number){
 }
 
 export default function GuildBoard(){
+  function loadAff(){ try{ return JSON.parse(localStorage.getItem('aldor_mission_affinity')||'{}'); }catch{ return {}; } }
+  const [missionAff, setMissionAff] = React.useState<Record<string, number>>({});
+  useEffect(()=>{ setMissionAff(loadAff()); }, []);
+  useEffect(()=>{ localStorage.setItem('aldor_mission_affinity', JSON.stringify(missionAff)); }, [missionAff]);
+
   const { state, undertakeQuest } = useGame();
   const [acceptingId, setAcceptingId] = useState<string|null>(null);
   const [progress, setProgress] = useState(0);
@@ -94,7 +100,7 @@ export default function GuildBoard(){
   const completedAtOrAbove = countCompletedAtOrAbove(state.guild.completedQuests as any || [], playerRank as any);
   const promo = canPromote(playerRank as any, completedAtOrAbove);
   const nextRank = promo.ok ? promo.next : null;
-  
+
   // Histórico
   const history = useMemo(()=>{
     const h = (state.guild.completedQuests||[]).slice(-10).reverse();
@@ -110,6 +116,7 @@ export default function GuildBoard(){
         <div className="text-amber-100 font-semibold">Quadro de Contratos</div>
         <div className="text-xs opacity-80">
           Próximo Rank: <span className="font-semibold">{nextRank || '—'}</span>
+          {nextRank && (()=>{ const need=(rankThresholds as any)[playerRank]; const falta=need-(completedAtOrAbove||0); return <span className='opacity-70'> ({falta>0?`faltam ${falta} contratos`:'pronto para promoção!'})</span>; })()}
           
         </div>
       </div>
@@ -119,7 +126,8 @@ export default function GuildBoard(){
           <div key={m.id} className="rounded-xl border border-amber-800/40 bg-black/20 p-3">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <div className="font-semibold text-amber-200">{m.title} <span className="text-xs opacity-60">[{m.rank}]</span></div>
+                <div className="font-semibold text-amber-200">{m.title}
+                <div className="text-[11px] opacity-75 mt-1">{getMissionLore(m.id, m.rank as any)}</div> <span className="text-xs opacity-60">[{m.rank}]</span></div>
                 <div className="text-xs opacity-80">{m.desc}</div>
               </div>
               <div className={`text-right text-sm ${riskColor(m.successChance||50)}`}>

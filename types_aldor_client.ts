@@ -58,6 +58,8 @@ export type Quest = {
 };
 
 export type PlayerState = {
+  id: string;
+  missionAffinity?: Record<string, number>;
   character: Character;
   guildRank: number;
   adventurerRank: Rank | string;

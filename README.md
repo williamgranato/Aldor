@@ -144,13 +144,11 @@ Você pode evoluir:
 - **Sair**: botão no topo que executa `logout()`, retornando à tela de **Login/Criar conta**.
 > Mantém layout e gradientes; sem dependências novas.
 
+## Guilda++ v3 — Loot & Afinidade (sem quebrar nada, porra!)
 
-## 🛡️ Guilda++ v2 (melhorias de UX e progressão)
+- **Drops de itens** por missão restaurados e melhores (variam por rank e dificuldade). Itens caem no **inventário global** e aparecem no **modal** com ícone e nome bonito.
+- **Afinidade por contrato** (de volta): repetir a mesma missão aumenta chance de sucesso (até +25%). Persistência em `localStorage`.
+- **Itens diferenciados**: catálogo com **nome, raridade, descrição e durabilidadeMax** (`utils/items_catalog.ts`). Inventário colorido por raridade + tooltip descritivo.
+- **Missões imersivas**: lore criativa via `utils/mission_lore.ts` (sem mexer no teu catálogo base).
 
-- Debuffs/penalidades **visuais** no card após a missão (💔 HP perdido, 🪓 durabilidade sugestiva).
-- **Filtros/ordenação**: Rank, Recompensa (XP, moedas), Risco (%).
-- **Contratos em cadeia** (3 partes) com recompensa épica garantida no final.
-- **Afinidade com NPC** (sinergia): repetir o mesmo companheiro dá bônus cumulativo até +15%.
-- **Loot preview** nos cards (icones dos principais drops com %).
-
-> Patch pensado pra não quebrar Praça/Mercado/saves. Client components com `'use client'` no topo.
+Nada foi removido: afinidade de NPC, cadeias, filtros (incluindo duração), debuff real de durabilidade, modal parrudo e rank automático continuam firmes.
