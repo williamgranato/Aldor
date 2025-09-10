@@ -5,7 +5,9 @@ import { seasonGradient } from '@/utils/seasonStyle';
 import { MT_REGIONS } from '@/data/mushoku_expanded';
 
 export default function GuildCard(){
-  const { state, createGuildCard } = useGame();
+  const game = useGame();
+  const { state, setState } = game as any;
+  const createGuildCard = (game as any).createGuildCard; // pode existir em algumas bases
   const isMember = state.guild?.isMember;
   const rank = state.player?.adventurerRank || 'Sem Guilda';
   const world = state.world;
@@ -13,26 +15,42 @@ export default function GuildCard(){
 
   // gera lista plana de cidades para valor inicial
   const allCities: string[] = MT_REGIONS.flatMap((cont:any) =>
-    cont.grupos.flatMap((grupo:any) =>
-      grupo.cidades.map((cidade:string) => cidade)
-    )
+    cont.grupos.flatMap((grupo:any) => grupo.cidades.map((cidade:string) => cidade))
   );
 
   const [origin,setOrigin] = useState(allCities[0] || '');
   const [role,setRole] = useState('Espadachim');
   const [aptidao, setAptidao] = useState<number|null>(null);
-
-  useEffect(()=>{
-    const val = Math.floor(Math.min(500, Math.max(0, Math.round(250 + (Math.random()-0.5)*200))));
-    setAptidao(val);
-  },[]);
+  useEffect(()=>{ setAptidao(Math.floor(Math.min(500, Math.max(0, Math.round(250 + (Math.random()-0.5)*200))))); },[]);
 
   const handleJoin = ()=>{
     const info = {
       name: state.player?.character?.name || 'Aventureiro',
       origin, role, roleKey: role.toLowerCase()
     };
-    const ok = createGuildCard(info);
+
+    let ok = false;
+    if(typeof createGuildCard === 'function'){
+      ok = createGuildCard(info);
+    } else {
+      // fallback mínimo e compatível
+      setState((s:any)=> ({
+        ...s,
+        guild: {
+          ...s.guild,
+          isMember: true,
+          memberCard: {
+            name: info.name,
+            origin: info.origin,
+            role: info.role,
+            roleKey: info.roleKey,
+            rank: 'F'
+          }
+        }
+      }));
+      ok = true;
+    }
+
     if(ok){
       alert(`Bem-vindo à Guilda dos Aventureiros! Rank inicial F. Aptidão mágica: ${aptidao}`);
     }
@@ -76,7 +94,7 @@ export default function GuildCard(){
           </label><br/>
           <label>Vocação:
             <select value={role} onChange={e=>setRole(e.target.value)} className="ml-2 p-1 bg-amber-950 border border-amber-700 rounded">
-              {['Espadachim','Mago','Healer','Tanker','Ladrão','Invocador'].map(c=><option key={c}>{c}</option>)}
+              {['Espadachim','Mago','Healer','Tanker','Ladrão','Invocador'].map((c:string)=><option key={c}>{c}</option>)}
             </select>
           </label><br/>
           <div suppressHydrationWarning>Aptidão mágica sorteada: {aptidao ?? '...'}</div>
