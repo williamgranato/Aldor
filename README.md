@@ -145,13 +145,12 @@ Você pode evoluir:
 > Mantém layout e gradientes; sem dependências novas.
 
 
-## 🛡️ Patch Guilda++ (6 melhorias na aba da Guilda)
+## 🛡️ Guilda++ v2 (melhorias de UX e progressão)
 
-- Feedback visual de missão (ícone/risco + barra de progresso 5s + sucesso/fracasso).
-- Risco/recompensa com **chance de sucesso (%)** antes de aceitar.
-- Progressão de **Rank** exibida (usa thresholds do `rankProgress.ts`).
-- **Histórico** de contratos recentes (últimas 10).
-- **Missão de evento rara** (1% ao dia): “Defesa Noturna da Guilda” com recompensa alta.
-- **Companheiros NPC** com bônus de até +8% na chance.
+- Debuffs/penalidades **visuais** no card após a missão (💔 HP perdido, 🪓 durabilidade sugestiva).
+- **Filtros/ordenação**: Rank, Recompensa (XP, moedas), Risco (%).
+- **Contratos em cadeia** (3 partes) com recompensa épica garantida no final.
+- **Afinidade com NPC** (sinergia): repetir o mesmo companheiro dá bônus cumulativo até +15%.
+- **Loot preview** nos cards (icones dos principais drops com %).
 
-> Tudo pronto pra jogar, mantendo múltiplos saves/slots e compat com Praça/Mercado.
+> Patch pensado pra não quebrar Praça/Mercado/saves. Client components com `'use client'` no topo.
