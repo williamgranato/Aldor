@@ -1,5 +1,5 @@
-// /app/page.tsx
 'use client';
+// /app/page.tsx
 import React, { useMemo } from 'react';
 import PaperDoll from '@/components/PaperDoll';
 import InventoryPanel from '@/components/InventoryPanel';

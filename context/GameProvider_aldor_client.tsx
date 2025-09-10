@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { GameState, PlayerState, Item, Quest, CoinPouch, AttributeKey, SaveBlob } from '@/types_aldor_client';
 import { coinsToCopper, copperToCoins, addPouch } from '@/utils/money_aldor_client';
+import { canPromote, countCompletedAtOrAbove } from '@/utils/rankProgress';
 import { simulateCombat, enemyForRank } from '@/utils/combat_aldor_client';
 import { generateDailyQuests } from '@/utils/dailyQuests_aldor_client';
 import { rankOrder } from '@/utils/rankStyle';

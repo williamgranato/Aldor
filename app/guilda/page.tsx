@@ -1,7 +1,8 @@
-// app/guilda/page.tsx
 'use client';
+// app/guilda/page.tsx
 import GuildCard from '@/components/GuildCard';
 import GuildBoard from '@/components/GuildBoard';
+import MissionResultModal from '@/components/MissionResultModal';
 import { useGame } from '@/context/GameProvider_aldor_client';
 
 export default function GuildaPage(){
@@ -17,6 +18,7 @@ export default function GuildaPage(){
       )}
       <GuildCard />
       {isMember && <GuildBoard />}
+      <MissionResultModal />
     </div>
   );
 }
