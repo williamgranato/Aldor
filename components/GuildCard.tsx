@@ -1,9 +1,8 @@
-// components/GuildCard.tsx (patchado)
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import { seasonGradient } from '@/utils/seasonStyle';
-import { CIDADES } from '@/data/mushoku_expanded';
+import { MT_REGIONS } from '@/data/mushoku_expanded';
 
 export default function GuildCard(){
   const { state, createGuildCard } = useGame();
@@ -12,9 +11,21 @@ export default function GuildCard(){
   const world = state.world;
   const grad = seasonGradient?.[world?.season || 'Primavera'] || 'bg-zinc-900';
 
-  const [origin,setOrigin] = useState(CIDADES[0]);
+  // gera lista plana de cidades para valor inicial
+  const allCities: string[] = MT_REGIONS.flatMap((cont:any) =>
+    cont.grupos.flatMap((grupo:any) =>
+      grupo.cidades.map((cidade:string) => cidade)
+    )
+  );
+
+  const [origin,setOrigin] = useState(allCities[0] || '');
   const [role,setRole] = useState('Espadachim');
-  const [aptidao] = useState(Math.floor(Math.min(500, Math.max(0, Math.round(250 + (Math.random()-0.5)*200)))));
+  const [aptidao, setAptidao] = useState<number|null>(null);
+
+  useEffect(()=>{
+    const val = Math.floor(Math.min(500, Math.max(0, Math.round(250 + (Math.random()-0.5)*200))));
+    setAptidao(val);
+  },[]);
 
   const handleJoin = ()=>{
     const info = {
@@ -50,7 +61,17 @@ export default function GuildCard(){
         <div className="mt-3 space-y-2 text-sm">
           <label>Cidade de Nascimento:
             <select value={origin} onChange={e=>setOrigin(e.target.value)} className="ml-2 p-1 bg-amber-950 border border-amber-700 rounded">
-              {CIDADES.map(c=><option key={c}>{c}</option>)}
+              {MT_REGIONS.map((cont:any, idx:number)=>(
+                <optgroup key={idx} label={cont.continente}>
+                  {cont.grupos.map((grupo:any)=>
+                    grupo.cidades.map((cidade:string)=>(
+                      <option key={`${grupo.reino}-${cidade}`} value={cidade}>
+                        [{grupo.reino}] {cidade}
+                      </option>
+                    ))
+                  )}
+                </optgroup>
+              ))}
             </select>
           </label><br/>
           <label>Vocação:
@@ -58,7 +79,7 @@ export default function GuildCard(){
               {['Espadachim','Mago','Healer','Tanker','Ladrão','Invocador'].map(c=><option key={c}>{c}</option>)}
             </select>
           </label><br/>
-          <div>Aptidão mágica sorteada: {aptidao}</div>
+          <div suppressHydrationWarning>Aptidão mágica sorteada: {aptidao ?? '...'}</div>
         </div>
       )}
     </div>

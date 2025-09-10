@@ -62,7 +62,7 @@ export const MT_RACES = [
 
 export const MT_REGIONS = [
   { continente:'Continente Central (Asura)', grupos:[
-    { reino:'Reino de Asura', cidades:['Capital Real de Asura','Distrito de Fittoa','Roa','Buina'] },
+    { reino:'Reino de Asura', cidades:['Capital Real de Asura','Distrito de Fittoa','Distrito de Roa','Distrito de Buina'] },
     { reino:'Reino de Shirone', cidades:['Shirone (Capital)','Shirone Baixa'] },
     { reino:'Reino de Sanakia', cidades:['Sanakia (Capital)'] },
     { reino:'Reino de Kikka', cidades:['Kikka (Capital)'] },
