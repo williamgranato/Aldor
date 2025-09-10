@@ -143,3 +143,15 @@ Você pode evoluir:
 - **Trocar save**: botão no topo (header) que chama `selectSlot(null)`, abrindo a **Seleção de Personagem**.
 - **Sair**: botão no topo que executa `logout()`, retornando à tela de **Login/Criar conta**.
 > Mantém layout e gradientes; sem dependências novas.
+
+
+## 🛡️ Patch Guilda++ (6 melhorias na aba da Guilda)
+
+- Feedback visual de missão (ícone/risco + barra de progresso 5s + sucesso/fracasso).
+- Risco/recompensa com **chance de sucesso (%)** antes de aceitar.
+- Progressão de **Rank** exibida (usa thresholds do `rankProgress.ts`).
+- **Histórico** de contratos recentes (últimas 10).
+- **Missão de evento rara** (1% ao dia): “Defesa Noturna da Guilda” com recompensa alta.
+- **Companheiros NPC** com bônus de até +8% na chance.
+
+> Tudo pronto pra jogar, mantendo múltiplos saves/slots e compat com Praça/Mercado.

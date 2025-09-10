@@ -1,131 +1,169 @@
+// components/GuildBoard.tsx
 'use client';
-import React from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
-import { estimateRisk, simulateCombat } from '@/utils/combat_sim';
-import { GUILD_MISSIONS } from '@/src/data/missions';
+import { MISSIONS, type Mission } from '@/data/missions_catalog';
+import { canPromote, countCompletedAtOrAbove } from '@/utils/rankProgress';
 
-const ORDER: Array<'F'|'E'|'D'|'C'|'B'|'A'|'S'|'SS'|'SSS'> = ['F','E','D','C','B','A','S','SS','SSS'];
+type VMission = Mission & { successChance?: number; npc?: {name:string, cls:string, bonus:number} };
 
-function coinStr(c:{copper?:number, bronze?:number, silver?:number, gold?:number}={}){
-  const cpr = (c.copper||0) + (c.bronze||0);
-  const parts:string[] = [];
-  if (c.gold) parts.push(`${c.gold} ouro`);
-  if (c.silver) parts.push(`${c.silver} prata`);
-  if (cpr) parts.push(`${cpr} cobre`);
-  return parts.join(' + ') || '0';
+function riskColor(p:number){
+  if(p>=80) return 'text-emerald-400';
+  if(p>=55) return 'text-yellow-300';
+  if(p>=30) return 'text-orange-400';
+  return 'text-red-400';
+}
+
+function ProgressBar({ value }:{value:number}){
+  return (
+    <div className="w-full h-2 bg-black/40 rounded overflow-hidden ring-1 ring-amber-900/40">
+      <div className="h-full bg-amber-400 transition-all duration-200" style={{ width: `${value}%` }} />
+    </div>
+  );
+}
+
+function rollNPC(seed:number){
+  const names = ['Ragna', 'Thorin', 'Elira', 'Kalev', 'Mora', 'Jax', 'Liora', 'Borin'];
+  const classes = ['Ladino','Mago','Guerreiro','Arqueiro','Clérigo'];
+  const n = names[seed % names.length];
+  const c = classes[(seed*7) % classes.length];
+  const bonus = (seed % 5) * 2; // 0..8%
+  return { name:n, cls:c, bonus };
 }
 
 export default function GuildBoard(){
-  const { state, addXP, giveCoins, addWorldTime, ADD_WORLD_TIME, advanceTime, setState } = useGame() as any;
+  const { state, undertakeQuest } = useGame();
+  const [acceptingId, setAcceptingId] = useState<string|null>(null);
+  const [progress, setProgress] = useState(0);
+  const playerRank = state.player.adventurerRank as string;
+  const completed = state.guild.completedQuests?.length || 0;
 
-  // rank do jogador
-  const pr: any = state?.player?.adventurerRank || 'F';
-  const pi = Math.max(0, ORDER.indexOf(pr));
-  const allowed = new Set([ORDER[Math.max(0,pi-1)], ORDER[pi], ORDER[Math.min(ORDER.length-1, pi+1)]]);
+  // Gera uma missão de evento rara (1% chance)
+  const eventMission: VMission | null = useMemo(()=>{
+    const daySeed = Math.floor((state.world?.dateMs||Date.now())/86400000);
+    if ((daySeed % 100) !== 0) return null;
+    return {
+      id: 'event_raid',
+      title: 'Defesa Noturna da Guilda',
+      desc: 'Rumores de um ataque coordenado. Reúna forças e defenda a sede da guilda.',
+      rank: 'B',
+      difficulty: 1.4,
+      rewards: { coinsCopper: 120, xp: 65 },
+      drops: [],
+      successChance: 0, npc: undefined
+    } as any;
+  }, [state.world?.dateMs]);
 
-  // lista filtrada (somente guilda)
-  const full = (Array.isArray((GUILD_MISSIONS as any)) ? (GUILD_MISSIONS as any) : []);
-  const list = full.filter((m:any)=> m?.categoria==='guilda' && (allowed.has(m.rank) || allowed.has(m.requiredRank)));
+  // Calcula chance de sucesso aproximada (mock leve baseado em rank e dificuldade)
+  const withCalc = useMemo(()=>{
+    const order = ['F','E','D','C','B','A','S','SS','SSS'];
+    const pr = Math.max(0, order.indexOf(playerRank));
+    const map = [...MISSIONS];
+    if(eventMission) map.unshift(eventMission);
+    return map.map((m, idx)=>{
+      const base = 60 + (pr*5) - (Math.round((m.difficulty-1)*40));
+      const seedBonus = (m.id.charCodeAt(0)+idx) % 7; // 0..6
+      const npc = rollNPC(idx + pr*13);
+      const chance = Math.max(5, Math.min(95, base + seedBonus + npc.bonus));
+      return { ...m, successChance: chance, npc };
+    });
+  }, [playerRank, eventMission]);
 
-  const [activeId, setActiveId] = React.useState<string|null>(null);
-  const [endAt, setEndAt] = React.useState<number|null>(null);
-  const [modal, setModal] = React.useState<any|null>(null);
+  // Aceitar missão com progresso de 5s
+  const onAccept = (m: VMission)=>{
+    if(acceptingId) return;
+    setAcceptingId(m.id);
+    setProgress(0);
+    const start = Date.now();
+    const int = setInterval(()=>{
+      const pct = Math.min(100, ((Date.now()-start)/5000)*100);
+      setProgress(pct);
+    }, 120);
+    setTimeout(()=>{
+      clearInterval(int);
+      // Aplica bônus do NPC reduzindo dificuldade via sufixo no ID (parseado em undertakeQuest)
+      const mul = Math.max(0.8, 1 + ((100 - (m.successChance||50)) / 400) - (m.npc?.bonus||0)/100);
+      const qWithMul: any = { ...m, id: `${m.id}:mul:${mul.toFixed(2)}` };
+      undertakeQuest(qWithMul as any);
+      setAcceptingId(null);
+      setProgress(0);
+    }, 5000);
+  };
 
-  function calcDuration(m:any){
-    if (m?.durationMs) return m.durationMs;
-    const ri = Math.max(0, ORDER.indexOf(m?.rank || m?.requiredRank || 'F'));
-    return Math.round(10000 * (1 + ri*0.1)); // base +10% por rank
-  }
+  // Próximo rank
+  const completedAtOrAbove = countCompletedAtOrAbove(state.guild.completedQuests || [], playerRank as any);
+  const promo = canPromote(playerRank as any, completedAtOrAbove);
+  const nextRank = promo.ok ? promo.next : null;
+  const need = null;
 
-  function accept(m:any){
-    if (activeId) return;
-    const dur = calcDuration(m);
-    setActiveId(m.id);
-    setEndAt(Date.now() + dur);
-  }
-
-  function conclude(m:any){
-    if (!activeId || activeId!==m.id) return;
-    const result = simulateCombat(state?.player, m);
-    const ok = !!result?.win;
-
-    if (ok){
-      try { if (m?.rewards?.xp) addXP?.(m.rewards.xp); } catch {}
-      try {
-        const coins = m?.rewards?.coins || {};
-        const copper = (coins.copper||0) + (coins.bronze||0);
-        if (copper>0) giveCoins?.({ copper });
-      } catch {}
-      // items/drops: apenas informativo por enquanto
-    } else {
-      // efeitos de falha básicos (hpLoss)
-      const hpLoss = m?.onFailEffects?.hpLoss || 0;
-      if (hpLoss>0 && state?.player?.character){
-        const hp = Math.max(1, (state.player.character.hp||80) - hpLoss);
-        setState((s:any)=> ({ ...s, player: { ...s.player, character: { ...s.player.character, hp } }, updatedAt: Date.now() }));
-      }
-    }
-
-    // Avançar relógio do mundo
-    try {
-      const ms = calcDuration(m);
-      if (typeof addWorldTime==='function') addWorldTime(ms);
-      else if (typeof (ADD_WORLD_TIME as any)==='function') (ADD_WORLD_TIME as any)(ms);
-      else if (typeof advanceTime==='function') advanceTime(ms);
-    } catch {}
-
-    setModal({ ok, m, result });
-    setActiveId(null);
-    setEndAt(null);
-  }
+  // Histórico
+  const history = useMemo(()=>{
+    const h = (state.guild.completedQuests||[]).slice(-10).reverse();
+    return h.map((x)=>{
+      const mission = withCalc.find(m=>m.id.split(':')[0]===x.id.split(':')[0]);
+      return { id:x.id, at:x.at, title: mission?.title || x.id, rank: mission?.rank || '?' };
+    });
+  }, [state.guild.completedQuests, withCalc]);
 
   return (
-    <div className="rounded-2xl border border-amber-900/40 bg-gradient-to-b from-zinc-900 via-zinc-900/70 to-zinc-900/40 p-4">
-      <div className="mb-3 font-semibold text-amber-200 drop-shadow">Mural de Contratos</div>
-      <div className="grid md:grid-cols-2 gap-3">
-        {list.map((m:any)=>{
-          const risk = estimateRisk(state?.player, m);
-          const remaining = endAt && activeId===m.id ? Math.max(0, endAt - Date.now()) : 0;
-          return (
-            <div key={m.id} className={`relative overflow-hidden rounded-xl border border-zinc-800 p-3 bg-[url('/images/ui/paper_texture.png')] bg-cover bg-center`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-medium drop-shadow">{m.title}</div>
-                <div className="text-xs px-2 py-0.5 rounded bg-black/30 ring-1 ring-black/40">Risco: {risk.label}</div>
-              </div>
-              <div className="text-xs text-amber-200/90 mb-1">Rank necessário: {m.requiredRank || m.rank}</div>
-              <div className="mt-1 text-sm">
-                <div>Recompensas: <b>+{m.rewards?.xp||0} XP</b> • {coinStr(m.rewards?.coins)}</div>
-                {m.drops?.length ? <div className="mt-1 text-xs text-white/80">Drops: {m.drops.map((d:any)=>d.id).join(', ')}</div> : null}
-              </div>
-              <div className="mt-2 flex gap-2">
-                {activeId!==m.id && !activeId && (
-                  <button onClick={()=>accept(m)} className="px-3 py-1 rounded border border-slate-600 hover:bg-slate-800">Aceitar</button>
-                )}
-                {activeId===m.id && (
-                  <>
-                    <button onClick={()=>conclude(m)} className="px-3 py-1 rounded border border-emerald-700 text-emerald-300 hover:bg-emerald-900/30">Concluir</button>
-                    <div className="text-xs text-white/60">{Math.ceil(remaining/1000)}s</div>
-                  </>
-                )}
-              </div>
-            </div>
-          );
-        })}
+    <div className="rounded-2xl border border-amber-900/40 bg-amber-950/30 p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-amber-100 font-semibold">Quadro de Contratos</div>
+        <div className="text-xs opacity-80">
+          Próximo Rank: <span className="font-semibold">{nextRank || '—'}</span>
+          {need !== undefined && <span className="opacity-70"> (precisa de mais contratos)</span>}
+        </div>
       </div>
 
-      {modal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
-            <div className="text-lg font-semibold mb-2">{modal.ok ? 'Sucesso!' : 'Falha'}</div>
-            <div className="text-sm text-white/80 mb-4">
-              {modal.ok ? 'Missão concluída com êxito.' : 'A missão falhou. Alguns efeitos negativos foram aplicados.'}
+      <div className="grid md:grid-cols-2 gap-3">
+        {withCalc.map(m=>(
+          <div key={m.id} className="rounded-xl border border-amber-800/40 bg-black/20 p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="font-semibold text-amber-200">{m.title} <span className="text-xs opacity-60">[{m.rank}]</span></div>
+                <div className="text-xs opacity-80">{m.desc}</div>
+              </div>
+              <div className={`text-right text-sm ${riskColor(m.successChance||50)}`}>
+                {Math.round(m.successChance||50)}%<div className="text-xs opacity-60">sucesso</div>
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={()=>setModal(null)} className="px-3 py-1 rounded border border-slate-600 hover:bg-slate-800">Fechar</button>
+
+            <div className="mt-2 text-xs opacity-80 flex items-center gap-3">
+              <div>Recompensas: {m.rewards.xp} XP • {m.rewards.coinsCopper}¢</div>
+              <div className="ml-auto opacity-80">Companheiro: <span className="font-semibold">{m.npc?.name}</span> ({m.npc?.cls}, +{m.npc?.bonus}%)</div>
             </div>
+
+            {acceptingId === m.id ? (
+              <div className="mt-3">
+                <ProgressBar value={progress} />
+                <div className="text-xs mt-1 opacity-75">{Math.round(progress)}% — Executando contrato...</div>
+              </div>
+            ) : (
+              <div className="mt-3">
+                <button onClick={()=>onAccept(m)} className="px-3 py-1.5 rounded bg-amber-500 text-black font-bold hover:bg-amber-400 shadow">
+                  Aceitar (5s)
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        ))}
+      </div>
+
+      <div className="mt-4">
+        <div className="text-amber-100 font-semibold mb-2">Histórico recente</div>
+        {history.length === 0 ? (
+          <div className="text-xs opacity-70">Nenhuma missão concluída ainda.</div>
+        ) : (
+          <ul className="text-xs opacity-80 space-y-1">
+            {history.map(h=> (
+              <li key={h.at} className="flex items-center justify-between">
+                <span>{new Date(h.at).toLocaleString()} — {h.title}</span>
+                <span className="opacity-60">[{h.rank}]</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
