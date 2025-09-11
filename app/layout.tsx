@@ -5,6 +5,7 @@ import AppHeader from '@/components/AppHeader';
 import NavMenu from '@/components/NavMenu';
 import { GameProvider } from '@/context/GameProvider_aldor_client';
 import { AuthProvider } from '@/context/AuthProvider_aldor_client';
+import { ToastProvider } from '@/components/ToastProvider';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,9 +13,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <GameProvider>
           <AuthProvider>
-            <AppHeader />
-            <NavMenu />
-            {children}
+            <ToastProvider>
+              <AppHeader />
+              <NavMenu />
+              {children}
+            </ToastProvider>
           </AuthProvider>
         </GameProvider>
       </body>

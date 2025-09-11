@@ -27,13 +27,23 @@ export default function InventoryPanel({inventory,onEquip,onUse,onDiscard}:Props
     return deltas;
   }
 
+  function rarityRing(r?:string){
+    switch((r||'').toLowerCase()){
+      case 'uncommon': case 'incomum': return 'ring-emerald-500/40';
+      case 'rare': case 'raro': return 'ring-sky-500/40';
+      case 'epic': case 'épico': return 'ring-fuchsia-500/40';
+      case 'legendary': case 'lendário': return 'ring-amber-500/40';
+      default: return 'ring-neutral-700/40';
+    }
+  }
+
   return(<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
     {rows.map((it:any,idx:number)=>{
       const id=it.id||('item_'+idx);
       const src=`/images/items/${it.image||it.icon||id+'.png'}`;
       const showDelta=hoverId===id;
       return(<div key={id}
-        className="p-2 border border-neutral-800 rounded-2xl bg-neutral-900/60 hover:bg-neutral-800 transition"
+        className={`p-2 border border-neutral-800 rounded-2xl bg-neutral-900/60 hover:bg-neutral-800 transition ring-2 ${rarityRing(it.rarity)}`}
         onMouseEnter={()=>setHoverId(id)} onMouseLeave={()=>setHoverId(null)}
       >
         <div className="flex items-center gap-3">
@@ -49,9 +59,9 @@ export default function InventoryPanel({inventory,onEquip,onUse,onDiscard}:Props
         </div>
         {showDelta && <DeltaStatBadge deltas={computeDelta(it)} />}
         <div className="mt-2 flex items-center gap-2">
-          {onEquip&&it.slot&&<button className="px-2 py-1 text-xs bg-emerald-700 hover:bg-emerald-600" onClick={()=>onEquip(it)}>Equipar</button>}
-          {onUse&&it.type==='consumível'&&<button className="px-2 py-1 text-xs bg-amber-600 hover:bg-amber-500" onClick={()=>onUse(it)}>Usar</button>}
-          {onDiscard&&<button className="px-2 py-1 text-xs bg-rose-800 hover:bg-rose-700" onClick={()=>onDiscard(it)}>Descartar</button>}
+          {onEquip&&it.slot&&<button className="px-2 py-1 text-xs bg-emerald-700 hover:bg-emerald-600 rounded-md" onClick={()=>onEquip(it)}>Equipar</button>}
+          {onUse&&it.type==='consumível'&&<button className="px-2 py-1 text-xs bg-amber-600 hover:bg-amber-500 rounded-md" onClick={()=>onUse(it)}>Usar</button>}
+          {onDiscard&&<button className="px-2 py-1 text-xs bg-rose-800 hover:bg-rose-700 rounded-md" onClick={()=>onDiscard(it)}>Descartar</button>}
         </div>
       </div>);
     })}
