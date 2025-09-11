@@ -30,27 +30,10 @@ function coinsView(copper: number){
 }
 
 export default function PracaPage(){
-  const { state, giveXP, giveCoins, addWorldTime, ADD_WORLD_TIME, advanceTime } = useGame() as any;
-
-  // Helpers robustos de recompensa (compat)
-  function awardXP(amount:number){
-    const g:any = useGame() as any;
-    const { setState, giveXP, addXP } = g;
-    if(typeof giveXP==='function') return giveXP(amount);
-    if(typeof addXP==='function') return addXP(amount);
-    setState((s:any)=>({ ...s, player:{ ...s.player, xp:(s?.player?.xp||0)+amount } }));
-  }
-  function awardCopper(copper:number){
-    const g:any = useGame() as any;
-    const { setState, giveCoins, addCoins } = g;
-    if(typeof giveCoins==='function') return giveCoins({ copper });
-    if(typeof addCoins==='function') return addCoins({ copper });
-    setState((s:any)=>({ ...s, player:{ ...s.player, coins:{ ...(s?.player?.coins||{gold:0,silver:0,bronze:0,copper:0}), copper:(s?.player?.coins?.copper||0)+copper } } }));
-  }
-
+  const { state, addXP, giveCoins, addWorldTime, ADD_WORLD_TIME, advanceTime } = useGame() as any;
   const missions = useMemo(()=> getPracaMissions(), []);
 
-  // Apenas 1 missão ativa por vez
+  // Apenas 1 missão ativa por vez (trava local + pode coexistir com trava global)
   const [activeId, setActiveId] = useState<string | null>(null);
   const [remainingMs, setRemainingMs] = useState<number>(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -78,11 +61,11 @@ export default function PracaPage(){
 
   function finishMission(m: Mission){
     // Recompensas
-    if (m.rewards?.xp) awardXP(m.rewards.xp);
+    if (m.rewards?.xp) addXP(m.rewards.xp);
     const copper = (m.rewards?.copper ?? 0) + (m.rewards?.coins?.copper ?? 0);
-    if (copper > 0) awardCopper(copper);
+    if (copper > 0) giveCoins({ copper });
 
-    // Avançar relógio do mundo se a ação existir
+    // Avançar relógio do mundo se a ação existir (mantém compat com versões antigas)
     const maybeAddWorldTime = (typeof addWorldTime==="function"?addWorldTime:(typeof (ADD_WORLD_TIME as any)==="function"?(ADD_WORLD_TIME as any):(typeof advanceTime==="function"?advanceTime:undefined))) as any;
     if (typeof maybeAddWorldTime === 'function') {
       try { maybeAddWorldTime(m.durationMs); } catch {}
