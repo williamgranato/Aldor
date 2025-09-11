@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import { useAuth } from '@/context/AuthProvider_aldor_client';
 import SaveManagerModal from '@/components/SaveManagerModal';
+import { copperToCoins, coinsToCopper } from '@/utils/money_aldor_client';
 
 const RANK_LABEL: Record<string,string> = {
   'F':'F – Iniciante','E':'E – Aprendiz','D':'D – Operário','C':'C – Veterano',
@@ -52,6 +53,7 @@ export default function AppHeader(){
   const stamina = player?.stamina?.current ?? 0;
   const maxStamina = player?.stamina?.max ?? 200;
   const coins = player?.coins || {gold:0,silver:0,bronze:0,copper:0};
+  const displayCoins = copperToCoins(coinsToCopper(coins));
 
   const staminaPct = useMemo(()=> Math.min(100, Math.max(0, Math.round((stamina / (maxStamina||1))*100))), [stamina,maxStamina]);
 
@@ -91,10 +93,10 @@ export default function AppHeader(){
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1"><Image src="/images/items/gold.png" alt="Ouro" width={16} height={16} />{coins.gold||0}</span>
-            <span className="flex items-center gap-1"><Image src="/images/items/silver.png" alt="Prata" width={16} height={16} />{coins.silver||0}</span>
-            <span className="flex items-center gap-1"><Image src="/images/items/bronze.png" alt="Bronze" width={16} height={16} />{coins.bronze||0}</span>
-            <span className="flex items-center gap-1"><Image src="/images/items/copper.png" alt="Cobre" width={16} height={16} />{coins.copper||0}</span>
+            <span className="flex items-center gap-1"><Image src="/images/items/gold.png" alt="Ouro" width={16} height={16} />{displayCoins.gold||0}</span>
+            <span className="flex items-center gap-1"><Image src="/images/items/silver.png" alt="Prata" width={16} height={16} />{displayCoins.silver||0}</span>
+            <span className="flex items-center gap-1"><Image src="/images/items/bronze.png" alt="Bronze" width={16} height={16} />{displayCoins.bronze||0}</span>
+            <span className="flex items-center gap-1"><Image src="/images/items/copper.png" alt="Cobre" width={16} height={16} />{displayCoins.copper||0}</span>
           </div>
           <button onClick={()=>setShowSaveManager(true)} className="px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-black text-xs">Trocar Save</button>
           <button onClick={logout} className="px-2 py-1 rounded bg-red-600 hover:bg-red-500 text-black text-xs">Sair</button>

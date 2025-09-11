@@ -1,298 +1,133 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
-import { seasonGradient } from '@/utils/seasonStyle';
-import * as missionsData from '@/data/missions';
-import * as items from '@/data/items_catalog';
+import missionsMod from '@/data/missions';
+import { copperToCoins } from '@/utils/money_aldor_client';
 
-type Rank = 'F'|'E'|'D'|'C'|'A'|'S'|'SS';
-
-const DUR_BY_RANK: Record<Rank, number> = { F:3, E:4, D:5, C:6, A:7, S:10, SS:15 };
-const STAMINA_BY_RANK: Record<Rank, number> = { F:5, E:10, D:20, C:40, A:80, S:160, SS:320 };
-
-// ===== Helpers de Rank e Regra de Liberação (±1) =====
-const RANK_ORDER: Rank[] = ['F','E','D','C','A','S','SS'];
-const rankIdx = (r:Rank)=> RANK_ORDER.indexOf(r);
-const isAllowedForPlayer = (playerRank: Rank, missionRank: Rank) => {
-  const i = rankIdx(playerRank), j = rankIdx(missionRank);
-  if(i<0 || j<0) return false;
-  return Math.abs(i-j) <= 1;
-};
-
-type Mission = {
-  id: string;
-  title: string;
-  description?: string;
-  requiredRank: Rank;
-  rewards?: { xp?: number; coinsCopper?: number };
-  risk?: number; // 0..3
-  drops?: { id: string; chance: number; min?: number; max?: number }[];
-};
-
-function clamp(n:number, a:number, b:number){ return Math.max(a, Math.min(b, n)); }
-function sigmoid(x:number){ return 1/(1+Math.exp(-x)); }
-
-function estimateChance(player:any, m:Mission, learned:number){
-  const attrs = player?.attributes||{};
-  const stats = player?.stats||{};
-  const gear = (player?.equipped||{}) as any;
-  const rankGap = (['F','E','D','C','A','S','SS'] as Rank[]).indexOf((player?.adventurerRank||'F')) - (['F','E','D','C','A','S','SS'] as Rank[]).indexOf(m.requiredRank);
-  const scoreP = (attrs.strength||5)+(attrs.agility||5)+(attrs.intelligence||5)+(attrs.vitality||5) + (stats.attack||10)*0.5 + (stats.defense||5)*0.5 + (stats.crit||0.05)*20 + (player?.stamina?.current||0)*0.1 + (stats.hp||100)/(stats.maxHp||100)*10 + rankGap*4;
-  const scoreM = (['F','E','D','C','A','S','SS'] as Rank[]).indexOf(m.requiredRank)*10 + (m.risk||0)*5;
-  const base = clamp(0.2 + sigmoid((scoreP - scoreM)/10), 0.05, 0.95);
-  const learnedBonus = clamp(learned * 0.03, 0, 0.15);
-  return clamp(base + learnedBonus, 0.05, 0.98);
-}
-
-function copperToCoinsStr(copper:number){
-  const gold = Math.floor(copper/10000); copper%=10000;
-  const silver = Math.floor(copper/100); const bronze = Math.floor((copper%100)/10); const cop = copper%10;
-  const parts:string[]=[];
-  if(gold) parts.push(`${gold}g`);
-  if(silver) parts.push(`${silver}s`);
-  if(bronze) parts.push(`${bronze}b`);
-  if(cop) parts.push(`${cop}c`);
-  return parts.join(' ')||'0c';
-}
-
-function pickDrops(m:Mission){
-  const table = m.drops||[];
-  const out:{id:string,qty:number}[] = [];
-  for(const d of table){
-    if(Math.random() < d.chance){
-      const qty = Math.max(1, Math.floor((d.min||1) + Math.random()*((d.max||d.min||1) - (d.min||1) + 1)));
-      out.push({ id:d.id, qty });
-    }
-  }
-  return out;
-}
-
-function missionCatalog(): Mission[]{
-  // tenta pegar do data/missions.ts
-  const arr: any = (missionsData as any).GUILD_MISSIONS || (missionsData as any).missions || [];
-  if(Array.isArray(arr) && arr.length){
-    return arr.map((x:any, idx:number)=>({
-      id: x.id || `guild:${x.requiredRank||'F'}:${idx}`,
-      title: x.title || x.name || `Contrato ${idx+1}`,
-      description: x.description || x.desc,
-      requiredRank: (x.requiredRank || 'F') as Rank,
-      rewards: x.rewards || { xp: x.xp||10, coinsCopper: x.coinsCopper||100 },
-      risk: x.risk ?? 1,
-      drops: x.drops
-    }));
-  }
-  // fallback mínimo
-  return (['F','E','D','C','A','S','SS'] as Rank[]).flatMap((r,ri)=>
-    Array.from({length:4}).map((_,i)=>({
-      id:`guild:${r}:${i}`,
-      title:`Contrato ${r}-${i+1}`,
-      description:`Auxiliar um NPC local em uma tarefa do rank ${r}.`,
-      requiredRank:r,
-      rewards:{ xp: 10+ri*5, coinsCopper: 150*(ri+1) },
-      risk: (i%3),
-      drops:[
-        { id:'pocao_hp_pequena', chance:0.25, min:1, max:2 },
-        { id:'ferro_bruto', chance:0.18, min:1, max:1 }
-      ]
-    }))
+// Fallback leve de moedas
+function CoinInline({ type, amount }: { type: 'gold'|'silver'|'bronze'|'copper'; amount: number }){
+  const src = `/images/items/${type}.png`;
+  return (
+    <span className="inline-flex items-center gap-1" title={type} aria-label={type}>
+      <img src={src} alt={type} className="w-4 h-4 object-contain" />
+      <span>{amount ?? 0}</span>
+    </span>
   );
 }
 
 export default function GuildMissions(){
-  const { state, setState } = useGame();
+  const { state, giveXP, giveCoins, ensureMemberCard, setState } = useGame() as any;
 
-  // estado derivado
-  const myRankRaw:any = (state as any).player?.adventurerRank || 'F';
-  const myRank = (RANK_ORDER.includes(myRankRaw) ? myRankRaw : 'F') as Rank;
-  const busyUntil:number = (state as any).guild?.busyUntilMs || 0;
-  const activeMission:any = (state as any).guild?.activeMission || null;
-  const now = typeof window!=='undefined' ? Date.now() : 0;
-  const busyRemaining = Math.max(0, (busyUntil||0) - now);
-  const world = state.world;
-  const grad = seasonGradient?.[world?.season || 'Primavera'] || 'bg-zinc-900';
-
-  const [rankFilter, setRankFilter] = useState<Rank|'ALL'>('ALL');
-  const [sortBy, setSortBy] = useState<'pay'|'xp'|'drops'>('pay');
-  const [loopingId, setLoopingId] = useState<string|null>(null);
-
-  const missions = useMemo(()=>{
-    let list = missionCatalog();
-    if(rankFilter!=='ALL') list = list.filter(m=>m.requiredRank===rankFilter);
-    list = list.slice(0); // clone
-    list.sort((a,b)=>{
-      if(sortBy==='pay') return (b.rewards?.coinsCopper||0)-(a.rewards?.coinsCopper||0);
-      if(sortBy==='xp') return (b.rewards?.xp||0)-(a.rewards?.xp||0);
-      const ad=(a.drops?.length||0), bd=(b.drops?.length||0); return bd-ad;
-    });
-    return list.filter(m=> isAllowedForPlayer(myRank, m.requiredRank));
-  },[rankFilter, sortBy]);
-
-  // aprendizado por missão (persistido no save em guild.learning[missionId])
-  const getLearn = (id:string)=> (state as any).guild?.learning?.[id] || 0;
-
-  const acceptOnce = (m:Mission)=>{
-    // bloqueios: membro, 1 missão por vez, rank permitido
-    if(!(state as any).guild?.isMember){ if(typeof window!=='undefined') alert('Apenas membros da guilda podem aceitar contratos.'); return; }
-    const pr:any = (state as any).player?.adventurerRank || 'F';
-    const prk = (RANK_ORDER.includes(pr)?pr:'F') as Rank;
-    if(!isAllowedForPlayer(prk, m.requiredRank)){ if(typeof window!=='undefined') alert(`Missão ${m.requiredRank} não é permitida para seu rank ${prk}.`); return; }
-    const nowMs = typeof window!=='undefined' ? Date.now() : 0;
-    if(((state as any).guild?.busyUntilMs||0) > nowMs){ if(typeof window!=='undefined') alert('Você já está em uma missão. Aguarde terminar.'); return; }
-
-    const cost = STAMINA_BY_RANK[m.requiredRank];
-    const dur = DUR_BY_RANK[m.requiredRank];
-    setState(s=>{
-      const cur = (s.player as any).stamina?.current ?? 0;
-      if(cur < cost){
-        if(typeof window!=='undefined') alert('Sem stamina suficiente.');
-        return s;
-      }
-      const s2:any = { ...s, updatedAt: Date.now() };
-      // consome stamina
-      s2.player = { ...s.player, stamina: { ...(s.player as any).stamina, current: cur - cost } };
-      // avança relógio do mundo (em ms, mas o jogo considera ms -> vamos somar seg*1000)
-      const w:any = { ...(s as any).world };
-      w.dateMs = (w.dateMs||Date.now()) + dur*1000;
-      s2.world = w;
-      // bloqueia novas missões até terminar a atual
-      const startedAt = Date.now();
-      const endsAt = startedAt + dur*1000;
-      s2.guild = { ...(s2.guild||{}), busyUntilMs: endsAt, activeMission: { id:m.id, title:m.title, requiredRank:m.requiredRank, startedAt, endsAt } } as any;
-
-
-      // calcula chance
-      const learned = (s2.guild?.learning?.[m.id]||0);
-      const chance = estimateChance(s2.player, m, learned);
-      const win = Math.random() < chance;
-
-      // aplica recompensa/penalidade
-      const p:any = { ...s2.player };
-      if(win){
-        p.xp = (p.xp||0) + (m.rewards?.xp||0);
-        // moedas
-        const c = (p.coins||{gold:0,silver:0,bronze:0,copper:0});
-        const cc = (m.rewards?.coinsCopper||0);
-        const add = {
-          gold: Math.floor(cc/10000),
-          silver: Math.floor((cc%10000)/100),
-          bronze: Math.floor((cc%100)/10),
-          copper: cc%10
-        };
-        p.coins = { gold:(c.gold||0)+add.gold, silver:(c.silver||0)+add.silver, bronze:(c.bronze||0)+add.bronze, copper:(c.copper||0)+add.copper };
-        // drops
-        const drops = pickDrops(m);
-        if(drops.length){
-          const inv = Array.isArray(p.inventory)?[...p.inventory]:[];
-          drops.forEach(d=>{
-            const cat = (items as any).ITEMS_CATALOG || (items as any).ITEMS || [];
-            const base = Array.isArray(cat) ? cat.find((it:any)=> it.id===d.id) : null;
-            const item = base ? {...base} : { id:d.id, name:d.id, valueCopper:10, image:'/images/items/unknown.png' };
-            const idx = inv.findIndex((it:any)=> it.id===item.id);
-            if(idx>=0) inv[idx] = { ...inv[idx], qty: (inv[idx].qty||0) + d.qty };
-            else inv.push({ ...item, qty: d.qty });
+  // Garantir cartão do membro por player-id (persistente)
+  useEffect(()=>{
+    try {
+      if (!state?.player?.guild?.isMember || !state?.player?.guild?.memberCardId) {
+        if (typeof ensureMemberCard === 'function') ensureMemberCard();
+        else {
+          // fallback: cria direto
+          setState((s:any)=>{
+            const pid = s?.player?.id || s?.player?.playerId || s?.playerId || 'player';
+            const guild = { ...(s?.player?.guild ?? {}), isMember: true, memberCardId: `guildcard:${pid}`, memberSince: Date.now() };
+            return { ...s, player: { ...s.player, guild } };
           });
-          p.inventory = inv;
         }
-        // aprendizado +
-        const g:any = { ...(s2.guild||{}) };
-        g.learning = { ...(g.learning||{}), [m.id]: Math.min(5, (g.learning?.[m.id]||0) + 1) };
-        // log simples
-        const logLine = `✅ ${m.title} — +${m.rewards?.xp||0}xp, +${copperToCoinsStr(m.rewards?.coinsCopper||0)} ${drops.length? ' + drops':''}`;
-        g.log = [logLine, ...(g.log||[])].slice(0,50);
-        s2.guild = g;
-      }else{
-        // falha: perder um pouco de HP (10%)
-        const hp = (p.stats?.hp||100), max = (p.stats?.maxHp||100);
-        const lost = Math.max(1, Math.floor(max*0.1));
-        const p2:any = { ...p, stats: { ...(p.stats||{}), hp: Math.max(1, hp - lost) } };
-        s2.player = p2;
-        const g:any = { ...(s2.guild||{}) };
-        g.log = [`❌ ${m.title} — falhou (−${lost} HP)`, ...(g.log||[])].slice(0,50);
-        s2.guild = g;
       }
-      return s2;
-    });
-  };
+    } catch {}
+  }, [state?.player?.id]);
 
-  const loopRef = useRef<ReturnType<typeof setTimeout>|null>(null);
-  const runLoop = (m:Mission)=>{
-    if(loopRef.current) clearTimeout(loopRef.current);
-    setLoopingId(m.id);
-    const step = ()=>{
-      acceptOnce(m);
-      loopRef.current = setTimeout(()=>{
-        const cur = (state as any).player?.stamina?.current ?? 0;
-        if(cur <= 0){ setLoopingId(null); if(typeof window!=='undefined') alert('Stamina acabou. Loop pausado.'); return; }
-        step();
-      }, (DUR_BY_RANK[m.requiredRank])*1000);
-    };
-    step();
-  };
-  const stopLoop = ()=>{ if(loopRef.current) clearTimeout(loopRef.current); setLoopingId(null); };
+  // Corrigir import de missões: pode ser default array, ou objeto com .guild
+  const missionsCat: any = (missionsMod as any)?.default ?? missionsMod;
+  const baseList: any[] = (missionsCat?.guild ?? missionsCat) as any[];
+  const missions = useMemo(()=> Array.isArray(baseList) ? baseList : [], []);
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [remainingMs, setRemainingMs] = useState<number>(0);
+  const [activeMission, setActiveMission] = useState<any>(null);
+
+  useEffect(()=>{
+    let timer: any;
+    if (activeId && activeMission) {
+      timer = setInterval(()=>{
+        setRemainingMs(prev=>{
+          const next = prev - 1000;
+          if (next <= 0) {
+            clearInterval(timer);
+            finishMission(activeMission);
+            return 0;
+          }
+          return next;
+        });
+      }, 1000);
+    }
+    return ()=> { if (timer) clearInterval(timer); };
+  }, [activeId, activeMission]);
+
+  function startMission(m: any){
+    if (activeId) return;
+    setActiveId(m.id);
+    setRemainingMs(m.durationMs);
+    setActiveMission(m);
+  }
+
+  function finishMission(m: any){
+    try {
+      const xp = m?.rewards?.xp ?? 0;
+      const copper = (m?.rewards?.copper ?? 0) + (m?.rewards?.coins?.copper ?? 0);
+      if (xp && typeof giveXP === 'function') giveXP(xp);
+      if (copper && typeof giveCoins === 'function') giveCoins({ copper });
+    } finally {
+      setActiveId(null);
+      setRemainingMs(0);
+      setActiveMission(null);
+    }
+  }
+
+  function coinsView(copper:number){
+    const c = copperToCoins(copper);
+    return (
+      <span className="inline-flex items-center gap-2">
+        <CoinInline type="gold" amount={c.gold} />
+        <CoinInline type="silver" amount={c.silver} />
+        <CoinInline type="bronze" amount={c.bronze} />
+        <CoinInline type="copper" amount={c.copper} />
+      </span>
+    );
+  }
+
+  function formatCountdown(ms: number){
+    const s = Math.max(0, Math.ceil(ms/1000));
+    return `${s}s`;
+  }
 
   return (
-    <div className={`rounded-2xl p-4 border border-amber-800/30 ${grad}`}>
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="text-amber-200 font-semibold text-lg">Mural de Contratos</div>
-        {busyRemaining>0 && (
-          <div className="w-full">
-            <div className="text-xs text-amber-200 mb-1">Missão em andamento: {activeMission?.title || 'Contrato'}</div>
-            <div className="h-2 w-full bg-zinc-800/70 rounded overflow-hidden">
-              <div
-                className="h-2 bg-amber-500 transition-all"
-                style={{ width: `${Math.max(0, 100 - (busyRemaining / ((activeMission?.endsAt||now) - (activeMission?.startedAt||now))) * 100)}%` }}
-              />
+    <div className="space-y-3">
+      <h2 className="text-lg font-semibold">Missões da Guilda</h2>
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+        {missions.map((m: any)=>(
+          <div key={m.id ?? m.title} className="rounded-xl overflow-hidden bg-slate-900/50 border border-slate-800 hover:border-slate-600 transition">
+            <div className="p-3 space-y-2">
+              <div className="font-semibold">{m.title}</div>
+              <p className="text-sm text-white/80 line-clamp-2">{m.desc}</p>
+              <div className="text-xs text-white/70">Duração: {Math.round((m.durationMs ?? 3000)/1000)}s</div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm flex items-center gap-2">
+                  <span>{m.rewards?.xp ?? 0} XP</span>
+                  <span className="opacity-70">·</span>
+                  {coinsView((m.rewards?.copper ?? 0) + (m.rewards?.coins?.copper ?? 0))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className={`px-3 py-1 rounded-md text-sm ${activeId && activeId!== (m.id ?? m.title) ? 'bg-slate-700 text-white/40 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500'}`}
+                    disabled={!!activeId && activeId!==(m.id ?? m.title)}
+                    onClick={()=> startMission(m)}
+                  >
+                    {activeId===(m.id ?? m.title) ? `Em andamento (${formatCountdown(remainingMs)})` : 'Aceitar'}
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="text-[10px] opacity-70 mt-1">Termina em {(busyRemaining/1000).toFixed(1)}s</div>
           </div>
-        )}
-
-        <div className="flex items-center gap-2 text-xs">
-          <label>Rank:</label>
-          {(['ALL','F','E','D','C','A','S','SS'] as const).map(r=>(
-            <button key={r} onClick={()=>setRankFilter(r as any)} className={`px-2 py-1 rounded border ${rankFilter===r?'border-amber-400 bg-amber-900/40':'border-amber-800 hover:bg-amber-950'}`}>{r}</button>
-          ))}
-          <label className="ml-3">Ordenar por:</label>
-          <select value={sortBy} onChange={e=>setSortBy(e.target.value as any)} className="px-2 py-1 rounded bg-amber-950 border border-amber-800">
-            <option value="pay">Pagamento</option>
-            <option value="xp">EXP</option>
-            <option value="drops">Drops</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="mt-3 grid md:grid-cols-2 gap-3">
-        {missions.map(m=>{
-          const learned = getLearn(m.id);
-          const chance = estimateChance(state.player, m, learned);
-          const dur = DUR_BY_RANK[m.requiredRank];
-          const cost = STAMINA_BY_RANK[m.requiredRank];
-          return (
-            <div key={m.id} className="rounded-xl border border-amber-900/40 bg-black/30 p-3">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold">{m.title} <span className="text-amber-300">[{m.requiredRank}]</span></div>
-                <div className="text-xs opacity-80">Sucesso estimado: {Math.round(chance*100)}%</div>
-              </div>
-              <div className="text-xs opacity-90 mt-1">{m.description||'Contrato de serviço local.'}</div>
-              <div className="mt-2 text-xs flex items-center gap-3 flex-wrap">
-                <span>⏱ {dur}s</span>
-                <span>🧪 Stamina: {cost}</span>
-                <span>✨ EXP: {m.rewards?.xp||0}</span>
-                <span>💰 {copperToCoinsStr(m.rewards?.coinsCopper||0)}</span>
-                {typeof m.risk==='number' && <span>⚠️ Risco: {m.risk}</span>}
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <button onClick={()=>acceptOnce(m)} className="px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-black text-sm font-semibold" disabled={busyRemaining>0 || !isAllowedForPlayer(myRank, m.requiredRank)}>
-                  {busyRemaining>0 ? 'Aguardando...' : 'Aceitar'}
-                </button>
-                {loopingId===m.id
-                  ? <button onClick={stopLoop} className="px-2 py-1 rounded border border-amber-600 text-amber-300 text-sm">Parar</button>
-                  : <button onClick={()=>runLoop(m)} className="px-2 py-1 rounded border border-amber-600 text-amber-300 text-sm">Loop</button>
-                }
-              </div>
-            </div>
-          );
-        })}
+        ))}
       </div>
     </div>
   );
