@@ -5,7 +5,7 @@ import GuildBoard from '@/components/GuildBoard';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import { copperToCoins } from '@/utils/money_aldor_client';
 import { useToasts } from '@/components/ToastProvider';
-import itemsCatalog from '@/data/items_catalog';
+import * as itemsCatalog from '@/data/items_catalog';
 
 /** Guilda épica com integração a items_catalog e fix de hydration */
 type Tier = 'F'|'E'|'D'|'C'|'B'|'A'|'S'|'SS'|'SSS';
