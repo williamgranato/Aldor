@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import GuildCard from '@/components/GuildCard';
 import GuildBoard from '@/components/GuildBoard';
 import { useGame } from '@/context/GameProvider_aldor_client';
@@ -7,14 +7,14 @@ import { copperToCoins } from '@/utils/money_aldor_client';
 import { useToasts } from '@/components/ToastProvider';
 import * as itemsCatalog from '@/data/items_catalog';
 
-/** Guilda épica com integração a items_catalog e fix de hydration */
+/** Guilda – geração de missões só no cliente para evitar hydration mismatch */
 type Tier = 'F'|'E'|'D'|'C'|'B'|'A'|'S'|'SS'|'SSS';
 const TIER_SECONDS: Record<Tier, number> = { F:3,E:4,D:5,C:6,B:7,A:8,S:9,SS:10,SSS:11 };
 const TIER_COLORS: Record<Tier, string> = {
-  F:'from-zinc-800 to-zinc-700',  E:'from-emerald-800 to-emerald-700',
-  D:'from-sky-800 to-sky-700',    C:'from-indigo-800 to-indigo-700',
-  B:'from-violet-800 to-violet-700', A:'from-fuchsia-800 to-fuchsia-700',
-  S:'from-amber-800 to-amber-700', SS:'from-rose-800 to-rose-700',
+  F:'from-zinc-800 to-zinc-700',E:'from-emerald-800 to-emerald-700',
+  D:'from-sky-800 to-sky-700',C:'from-indigo-800 to-indigo-700',
+  B:'from-violet-800 to-violet-700',A:'from-fuchsia-800 to-fuchsia-700',
+  S:'from-amber-800 to-amber-700',SS:'from-rose-800 to-rose-700',
   SSS:'from-red-900 to-red-700',
 };
 
@@ -39,7 +39,7 @@ function levelToTier(level:number): Tier{
 
 // probabilidade baseada em raridade
 const rarityWeight:Record<string,number> = {
-  comum:0.6, incomum:0.25, raro:0.1, épico:0.04, lendário:0.008, mítico:0.002
+  comum:0.6,incomum:0.25,raro:0.1,épico:0.04,lendário:0.008,mítico:0.002
 };
 
 function pickDrops(t:Tier){
@@ -68,7 +68,7 @@ function makeMissions(): Mission[] {
   ];
   return defs.map(d=>({
     id:`guild:${d.tier}:${d.title}`,
-    tier:d.tier as Tier, title:d.title, desc:d.desc,
+    tier:d.tier as Tier,title:d.title,desc:d.desc,
     durationMs:TIER_SECONDS[d.tier as Tier]*1000,
     reward:{ xp:rngInt(5,15), coinsCopper:rngInt(20,100), drops:pickDrops(d.tier as Tier) }
   }));
@@ -88,24 +88,26 @@ function useRewards(){
 function CoinsInline({ copper }:{ copper:number }){
   const c=copperToCoins(copper);
   return (<span className="inline-flex items-center gap-2">
-    <span suppressHydrationWarning className="inline-flex items-center gap-1"><img src="/images/items/gold.png" className="w-4 h-4"/>{c.gold}</span>
-    <span suppressHydrationWarning className="inline-flex items-center gap-1"><img src="/images/items/silver.png" className="w-4 h-4"/>{c.silver}</span>
-    <span suppressHydrationWarning className="inline-flex items-center gap-1"><img src="/images/items/bronze.png" className="w-4 h-4"/>{c.bronze}</span>
-    <span suppressHydrationWarning className="inline-flex items-center gap-1"><img src="/images/items/copper.png" className="w-4 h-4"/>{c.copper}</span>
+    <span className="inline-flex items-center gap-1"><img src="/images/items/gold.png" className="w-4 h-4"/>{c.gold}</span>
+    <span className="inline-flex items-center gap-1"><img src="/images/items/silver.png" className="w-4 h-4"/>{c.silver}</span>
+    <span className="inline-flex items-center gap-1"><img src="/images/items/bronze.png" className="w-4 h-4"/>{c.bronze}</span>
+    <span className="inline-flex items-center gap-1"><img src="/images/items/copper.png" className="w-4 h-4"/>{c.copper}</span>
   </span>);
 }
 
 export default function GuildaPage(){
   const { state, ensureMemberCard, spendStamina, changeHP } = useGame() as any;
   const { awardAll } = useRewards();
-  const { add: pushToast } = useToasts();
+  const { pushToast } = useToasts();
   const isMember = state?.player?.guild?.isMember ?? false;
   const level = state?.player?.level ?? 1;
   const playerTier = state?.player?.rankTier ?? levelToTier(level);
 
-  const allMissions = useMemo(()=> makeMissions(), []);
+  const [missions,setMissions] = useState<Mission[]>([]);
+  useEffect(()=>{ setMissions(makeMissions()); },[]); // só gera no cliente
+
   const [tierFilter,setTierFilter]=useState<Tier|'ALL'>('ALL');
-  const missions=useMemo(()=>allMissions.filter(m=>tierFilter==='ALL'?true:m.tier===tierFilter),[allMissions,tierFilter]);
+  const missionsFiltered=missions.filter(m=>tierFilter==='ALL'?true:m.tier===tierFilter);
 
   const [activeId,setActiveId]=useState<string|null>(null);
   const [remainingMs,setRemainingMs]=useState<number>(0);
@@ -144,8 +146,9 @@ export default function GuildaPage(){
       <button onClick={()=>setTierFilter('ALL')} className={`px-3 py-1.5 rounded-lg border ${tierFilter==='ALL'?'border-amber-400 text-amber-300':'border-slate-700 text-white/80'} bg-slate-900/50`}>Todas</button>
       {ORDER.map(t=>(<button key={t} onClick={()=>setTierFilter(t)} className={`px-3 py-1.5 rounded-lg border ${tierFilter===t?'border-amber-400 text-amber-300':'border-slate-700 text-white/80'} bg-slate-900/50`}>Rank {t}</button>))}
     </div>
+    {missions.length===0 && <div className="text-white/60 text-sm">Carregando contratos...</div>}
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {missions.map(m=>{const activeThis=activeId===m.id;const disabled=!!activeId&&!activeThis;const tooHard=!allowed(playerTier,m.tier);
+      {missionsFiltered.map(m=>{const activeThis=activeId===m.id;const disabled=!!activeId&&!activeThis;const tooHard=!allowed(playerTier,m.tier);
         return(<div key={m.id} className={`rounded-xl overflow-hidden border bg-slate-950/60 border-slate-800 ring-1 ring-inset ring-transparent hover:ring-amber-400/30 transition-shadow shadow-lg hover:shadow-amber-500/10`}>
           <div className={`p-4 bg-gradient-to-br ${TIER_COLORS[m.tier]} text-white`}>
             <div className="flex items-center justify-between"><div className="text-xs uppercase tracking-widest opacity-90">Rank {m.tier}</div>{tooHard&&<span className="text-[11px] px-2 py-0.5 rounded bg-black/40 border border-white/20">Difícil</span>}</div>
@@ -154,7 +157,7 @@ export default function GuildaPage(){
           <div className="p-4 space-y-3">
             <div className="text-xs text-white/70">Duração: {format(m.durationMs)}</div>
             <div className="flex items-center justify-between text-sm"><div className="flex items-center gap-2">
-              <span suppressHydrationWarning className="rounded-md bg-amber-500/10 px-2 py-0.5 border border-amber-500/30">+{m.reward.xp} XP</span>
+              <span className="rounded-md bg-amber-500/10 px-2 py-0.5 border border-amber-500/30">+{m.reward.xp} XP</span>
               <span className="opacity-60">·</span><CoinsInline copper={m.reward.coinsCopper} />
             </div></div>
             {!!m.reward.drops?.length&&(<div className="text-xs text-white/80"><div className="mb-1 opacity-80">Possíveis drops</div>
