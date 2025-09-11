@@ -35,7 +35,8 @@ const defaultPlayer: PlayerState = {
   status: [],
   coins: { gold:0, silver:0, bronze:0, copper:0 },
   inventory: [],
-  skills: {}
+  skills: {},
+  equipped: {}
 };
 
 const defaultState: GameState = {
@@ -53,13 +54,20 @@ type Ctx = {
   state: GameState; setState: React.Dispatch<React.SetStateAction<GameState>>;
   slot: number; setSlot: (n:number)=>void;
   clearSlot:(n?:number)=>void; loadSlot:(n?:number)=>void; saveCurrentSlot:()=>void;
-  // Unified helpers (with backwards-compatible aliases)
+  // helpers
   giveXP:(amount:number)=>void; addXP:(amount:number)=>void;
   giveCoins:(p:Partial<CoinPouch>)=>void; addCoins:(p:Partial<CoinPouch>)=>void;
   spendStamina:(amount:number)=>boolean;
   changeHP:(delta:number)=>void;
   ensureMemberCard:()=>void;
   logGuildEvent:(entry:any)=>void;
+  // new inventory helpers
+  item_equip?:(slot:string,item:any)=>void;
+  item_unequip?:(slot:string)=>void;
+  use_item?:(item:any)=>void;
+  removeItem?:(id:string,qty:number)=>void;
+  equip?:(slot:string,item:any)=>void;
+  unequip?:(slot:string)=>void;
 };
 
 const GameContext = createContext<Ctx|null>(null);
@@ -72,13 +80,7 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
   // bootstrap load
   useEffect(()=>{
     const loaded = loadSlotFromStorage(slot);
-    if(loaded){
-      setState(loaded as any);
-    } else {
-      // first save
-      saveSlotToStorage(slot, defaultState as any);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if(loaded){ setState(loaded as any); } else { saveSlotToStorage(slot, defaultState as any); }
   }, [slot]);
 
   function scheduleSave(next?:GameState){
@@ -88,26 +90,20 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
       saveSlotToStorage(slot, { ...(blob as any), updatedAt: Date.now() });
     }, 150);
   }
-
-  function saveCurrentSlot(){
-    scheduleSave();
-  }
+  function saveCurrentSlot(){ scheduleSave(); }
 
   function giveXP(amount:number){
     if(!amount) return;
     setState(prev=>{
       const xp = Math.max(0, (prev.player?.xp ?? 0) + Math.floor(amount));
-      // simple level curve: level up each 100 xp; preserve existing if game has its own system
       let level = prev.player?.level ?? 1;
-      const beforeLevel = level;
       while(xp >= level*100) level++;
       const player = { ...prev.player, xp, level };
-      const next = { ...prev, player };
-      return next;
+      return { ...prev, player };
     });
     scheduleSave();
   }
-  const addXP = giveXP; // alias
+  const addXP = giveXP;
 
   function giveCoins(p:Partial<CoinPouch>){
     if(!p) return;
@@ -118,16 +114,15 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
     });
     scheduleSave();
   }
-  const addCoins = giveCoins; // alias
+  const addCoins = giveCoins;
 
   function spendStamina(amount:number){
     let ok = true;
     setState(prev=>{
       const st = prev.player?.stamina ?? { current:0, max:200, lastRefillDay:0 };
-      if(st.current < amount){ ok = false; return prev; }
+      if(st.current < amount){ ok=false; return prev; }
       const player = { ...prev.player, stamina: { ...st, current: st.current - amount } };
-      const next = { ...prev, player };
-      return next;
+      return { ...prev, player };
     });
     if(ok) scheduleSave();
     return ok;
@@ -170,7 +165,7 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
     scheduleSave();
   }
 
-  // passive stamina regen (client only)
+  // passive stamina regen
   useEffect(()=>{
     const id = setInterval(()=>{
       setState(prev=>{
@@ -182,15 +177,80 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
       scheduleSave();
     }, 3000);
     return ()=> clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
+
+  // === New Inventory Helpers ===
+  const removeItem=(id:string,qty:number)=>{
+    setState(prev=>{
+      const items=[...(prev.player.inventory as any[]||[])];
+      const i=items.findIndex(x=>x.id===id);
+      if(i>=0){
+        const left=(items[i].qty||0)-qty;
+        if(left<=0) items.splice(i,1);
+        else items[i]={...items[i],qty:left};
+      }
+      return {...prev,player:{...prev.player,inventory:items}};
+    });
+    scheduleSave();
+  };
+
+  const item_equip=(slot:string,item:any)=>{
+    setState(prev=>{
+      const items=[...(prev.player.inventory as any[]||[])];
+      const idx=items.findIndex(x=>x.id===item.id);
+      if(idx>=0){
+        const left=(items[idx].qty||0)-1;
+        if(left<=0) items.splice(idx,1);
+        else items[idx]={...items[idx],qty:left};
+      }
+      const eq={...(prev.player.equipped||{})};
+      eq[slot]={itemId:item.id};
+      return {...prev,player:{...prev.player,inventory:items,equipped:eq}};
+    });
+    scheduleSave();
+  };
+
+  const item_unequip=(slot:string)=>{
+    setState(prev=>{
+      const eq={...(prev.player.equipped||{})};
+      const data=eq[slot];
+      if(!data?.itemId) return prev;
+      const items=[...(prev.player.inventory as any[]||[])];
+      const i=items.findIndex(x=>x.id===data.itemId);
+      if(i>=0) items[i]={...items[i],qty:(items[i].qty||0)+1};
+      else items.push({id:data.itemId,qty:1});
+      delete eq[slot];
+      return {...prev,player:{...prev.player,inventory:items,equipped:eq}};
+    });
+    scheduleSave();
+  };
+
+  const use_item=(item:any)=>{
+    setState(prev=>{
+      const items=[...(prev.player.inventory as any[]||[])];
+      const idx=items.findIndex(x=>x.id===item.id);
+      if(idx>=0){
+        const left=(items[idx].qty||0)-1;
+        if(left<=0) items.splice(idx,1);
+        else items[idx]={...items[idx],qty:left};
+      }
+      const p={...prev.player};
+      if(item.restoreHp){ p.stats={...p.stats,hp:Math.min(p.stats.maxHp,(p.stats.hp||0)+item.restoreHp)}; }
+      if(item.restoreSta){ p.stamina={...p.stamina,current:Math.min(p.stamina.max,(p.stamina.current||0)+item.restoreSta)}; }
+      return {...prev,player:p};
+    });
+    scheduleSave();
+  };
+
+  const equip=(slot:string,item:any)=> item_equip(slot,item);
+  const unequip=(slot:string)=> item_unequip(slot);
 
   const ctx: Ctx = {
     state, setState,
     slot,
     setSlot:(n:number)=>{ setSlot(n); },
     clearSlot:(n?:number)=>{ clearSlotInStorage(n ?? slot); },
-    loadSlot:(n?:number)=>{ const l = loadSlotFromStorage(n ?? slot); if(l) setState(l as any); },
+    loadSlot:(n?:number)=>{ const l=loadSlotFromStorage(n ?? slot); if(l) setState(l as any); },
     saveCurrentSlot,
     giveXP, addXP,
     giveCoins, addCoins,
@@ -198,12 +258,12 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
     changeHP,
     ensureMemberCard,
     logGuildEvent,
+    item_equip,item_unequip,use_item,removeItem,equip,unequip
   };
 
   return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;
 }
 
-// Backwards-compatible named export many pages tried to import
 export const GameProvider = GameProviderClient;
 
 export function useGame(){

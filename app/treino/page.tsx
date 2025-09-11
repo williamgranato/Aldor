@@ -35,7 +35,7 @@ export default function TreinoPage(){
     setTimeout(()=>add({
       type:'success',
       title:'Treino',
-      message:`Treinou ${label} por ${c.gold} ouro, ${c.silver} prata, ${c.bronze} bronze e ${c.copper} cobre.`
+      message:`Treinou ${label} por ${c.gold} ouro, ${c.silver} prata e ${c.copper} cobre.`
     }), 10);
   }
 
@@ -53,7 +53,6 @@ export default function TreinoPage(){
               Custo:
               <span className="flex items-center gap-1" title="Ouro"><Image src="/images/items/gold.png" alt="Ouro" width={14} height={14} />{c.gold}</span>
               <span className="flex items-center gap-1" title="Prata"><Image src="/images/items/silver.png" alt="Prata" width={14} height={14} />{c.silver}</span>
-              <span className="flex items-center gap-1" title="Bronze"><Image src="/images/items/bronze.png" alt="Bronze" width={14} height={14} />{c.bronze}</span>
               <span className="flex items-center gap-1" title="Cobre"><Image src="/images/items/copper.png" alt="Cobre" width={14} height={14} />{c.copper}</span>
             </span>
           </Tip>
