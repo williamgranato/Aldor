@@ -98,7 +98,7 @@ function CoinsInline({ copper }:{ copper:number }){
 export default function GuildaPage(){
   const { state, ensureMemberCard, spendStamina, changeHP } = useGame() as any;
   const { awardAll } = useRewards();
-  const { pushToast } = useToasts();
+  const { add: pushToast } = useToasts();
   const isMember = state?.player?.guild?.isMember ?? false;
   const level = state?.player?.level ?? 1;
   const playerTier = state?.player?.rankTier ?? levelToTier(level);
