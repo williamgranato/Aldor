@@ -13,7 +13,6 @@ function nextRank(r:Rank): Rank {
   return (RANKS[Math.min(RANKS.length-1, i+1)] || r) as Rank;
 }
 function rankThreshold(rank: Rank): number {
-  // F->E = 10, E->D = 20, D->C = 40, doubling
   const idx = Math.max(0, RANKS.indexOf(rank));
   const stepsFromF = Math.max(0, idx - RANKS.indexOf('F'));
   return 10 * Math.pow(2, stepsFromF);
@@ -36,7 +35,7 @@ const defaultState: GameState = {
     inventory: [],
     skills: {}
   },
-  guild: { isMember:false, completedQuests:[], activeQuests:[], memberCard: { name: 'Aventureiro', origin: 'Desconhecido', role:'guerreiro', rank: 'F' as Rank } },
+  guild: { isMember:false, completedQuests:[], activeQuests:[], memberCard: undefined as any },
   world: { dateMs: Date.now() },
   ui: { headerStyle: 'modern' }
 };
@@ -49,7 +48,6 @@ export function GameProvider({ children }:{children:React.ReactNode}){
   const dirtyRef = useRef(false);
   function markDirty(){ dirtyRef.current = true; }
 
-  // === Persistência (save único com dirty flag) ===
   const saveKey = 'aldor_save';
   function saveNow(blob:any){ try{ localStorage.setItem(saveKey, JSON.stringify({ ...(blob as any), updatedAt: Date.now() })); }catch{} dirtyRef.current=false; }
   function loadSave(){ try{ const raw = localStorage.getItem(saveKey); if(raw) return JSON.parse(raw); }catch{} return null; }
@@ -61,15 +59,14 @@ export function GameProvider({ children }:{children:React.ReactNode}){
   }
   function ensureMemberCard(){
     setState(prev=>{
-      if(prev.guild.isMember) return prev;
-      const rank: Rank = 'F' as Rank;
+      if(prev.guild.isMember && prev.guild.memberCard?.rank) return prev;
+      const rank: Rank = (prev.guild.memberCard?.rank || 'F') as Rank;
       const card = { name: prev.player.character.name, origin: prev.player.character.origin, role: prev.player.character.role, rank };
       return { ...prev, guild: { ...prev.guild, isMember: true, memberCard: card } };
     });
     markDirty();
   }
 
-  // Derived stamina max from INT
   function computeMaxStamina(intelligence:number){
     return 100 + Math.max(0, Math.floor(intelligence))*3;
   }
@@ -83,7 +80,6 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     markDirty();
   }
 
-  // === Gameplay helpers ===
   function giveXP(amount:number){
     if(!amount) return;
     setState(prev=>{
@@ -99,7 +95,6 @@ export function GameProvider({ children }:{children:React.ReactNode}){
   function giveCoins(p:Partial<CoinPouch>){
     if(!p) return;
     setState(prev=>{
-      // addPouch suporta negativos para subtrair
       const pouch = addPouch(prev.player.coins, p);
       return { ...prev, player: { ...prev.player, coins: pouch } };
     });
@@ -133,32 +128,28 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     markDirty();
   }
 
-  // Complete mission for guild: log + check rank progression
   function completeGuildMission(rank: Rank){
     setState(prev=>{
       const cq = prev.guild.completedQuests ?? [];
       const newCq = [...cq, { id: `m_${Date.now()}`, rank, at: Date.now() }];
-      // count completions at current rank of memberCard
       const currentRank: Rank = (prev.guild.memberCard?.rank || 'F') as Rank;
       const doneAtCurrent = newCq.filter(q=>q.rank===currentRank).length;
       let memberCard = prev.guild.memberCard || { name: prev.player.character.name, origin: prev.player.character.origin, role: prev.player.character.role, rank: 'F' as Rank };
+      const idx = RANKS.indexOf(currentRank);
       const threshold = rankThreshold(currentRank);
-      if(doneAtCurrent >= threshold){
-        memberCard = { ...memberCard, rank: (nextRank(currentRank) as Rank) };
+      if(doneAtCurrent >= threshold && idx>=0 && idx<RANKS.length-1){
+        memberCard = { ...memberCard, rank: (RANKS[idx+1] as Rank) };
       }
-      return { ...prev, guild: { ...prev.guild, completedQuests: newCq, memberCard } };
+      return { ...prev, guild: { ...prev.guild, completedQuests: newCq, memberCard, isMember: true } };
     });
     markDirty();
   }
 
-  // Load inicial
-  useEffect(()=>{ const l = loadSave(); if(l) setState(l as any); },[]);
+  useEffect(()=>{ const l = loadSave(); if(l) setState((p:any)=>({ ...p, ...l })); },[]);
 
-  // Autosave + stamina regen
   useEffect(()=>{
     const id = setInterval(()=>{
       if(dirtyRef.current) saveNow(state);
-      // stamina regen: +1 a cada 5s
       setState(prev=>{
         const now = Date.now();
         const st:any = prev.player.stamina;
@@ -176,10 +167,7 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     return ()=>{ clearInterval(id); window.removeEventListener('beforeunload', flush); window.removeEventListener('visibilitychange', flush); };
   },[state]);
 
-  // Recalc stamina max when INT changes
-  useEffect(()=>{
-    recalcStaminaMax();
-  }, [state.player.attributes.intelligence]);
+  useEffect(()=>{ recalcStaminaMax(); }, [state.player.attributes.intelligence]);
 
   const ctx: Ctx = {
     state, setState,
