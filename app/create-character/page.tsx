@@ -63,7 +63,7 @@ export default function CreateCharacterPage(){
             </div>
 
             <label className="text-sm opacity-80">Classe</label>
-            <select className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" value={role} onChange={e=>setRole(e.target.value)}>
+            <select className="bg-neutral-900/90 text-neutral-100 border border-neutral-700 w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" value={role} onChange={e=>setRole(e.target.value)}>
               <option value="guerreiro">Guerreiro</option>
               <option value="arqueiro">Arqueiro</option>
               <option value="mago">Mago</option>
@@ -72,7 +72,7 @@ export default function CreateCharacterPage(){
 
             <label className="text-sm opacity-80">Cidade de Nascimento</label>
             <div className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700">
-              <select className="w-full bg-transparent outline-none" value={origin} onChange={e=>setOrigin(e.target.value)}>
+              <select className="bg-neutral-900/90 text-neutral-100 border border-neutral-700 w-full bg-transparent outline-none" value={origin} onChange={e=>setOrigin(e.target.value)}>
                 <option value="">Selecione…</option>
                 {(MT_REGIONS as Region[]).map((reg)=> (
                   <optgroup key={reg.continente} label={reg.continente}>

@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ToastProvider>
               <AppHeader />
               <NavMenu />
-              {children}
+              <div className="mt-[5px]">{children}</div>
             </ToastProvider>
           </AuthProvider>
         </GameProvider>

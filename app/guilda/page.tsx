@@ -158,7 +158,15 @@ export default function GuildPage(){
                 <div className="flex gap-2">
                   {q.xp? <span title="XP">+{q.xp} XP</span>:null}
                   {q.copper? <span title="Cobre">+{q.copper} cobre</span>:null}
-                  {q.drops?.length? <span title="Drops">{q.drops.length} item(ns)</span>:null}
+                  {Array.isArray(q.drops)&&q.drops.length>0? (
+                    <div className="flex gap-1 flex-wrap">
+                      {q.drops.map((d:any)=>(
+                        <div key={d.id} className={'w-8 h-8 rounded-md ring-2 bg-black/40 p-0.5 flex items-center justify-center ' + (d.rarity==='mítico'?'ring-amber-400': d.rarity==='lendário'?'ring-orange-400': d.rarity==='épico'?'ring-violet-400': d.rarity==='raro'?'ring-blue-400': d.rarity==='incomum'?'ring-emerald-400':'ring-gray-400')} title={(d.name||'Item') + (d.rarity? ' — '+d.rarity : '')}>
+                          <img src={(d.icon?.startsWith('/')? d.icon : '/'+(d.icon||'')) || '/images/items/unknown.png'} className="w-full h-full object-contain" />
+                        </div>
+                      ))}
+                    </div>
+                  ):null}
                 </div>
               </div>
             ))}

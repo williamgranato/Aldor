@@ -1,83 +1,88 @@
 # Aldor Idle
 
-Protótipo de RPG idle/managerial inspirado em mundos de fantasia medieval (Mushoku Tensei / Gladiatus / Melvor Idle).
+Um RPG idle/managerial medieval no navegador — inspirado em Mushoku Tensei, Gladiatus e Melvor Idle.  
+Construído em **Next.js 14 + React 18 + TypeScript + TailwindCSS**.
 
-## ⚙️ Stack e Estrutura
-- **Next.js 14** + **React 18**
+---
+
+## 🚀 Funcionalidades
+
+### 🎮 Personagem
+- Criação de personagem épica:
+  - Distribuição de **10 pontos** em Força, Destreza, Inteligência, Vigor e Sorte.
+  - Escolha da **cidade de nascimento** (Continente → Reino → Cidade).
+  - Mensagem criativa de boas-vindas.
+- Atributos afetam:
+  - **Stamina máxima**: 100 + 3×Inteligência.
+  - Combate e chances nas missões (planejado).
+
+### ⚡ Stamina
+- Máx. 100 + 3×INT.
+- Consumo: **5 por missão**.
+- Regeneração: **+1 a cada 5s**.
+- Exibida no Header e na tela inicial.
+
+### 🏛️ Guilda
+- Cadastro: custa **1 prata**.
+- Modal explica progressão, loop de missões e stamina.
+- Progressão de Rank:
+  - F → E: 10 missões
+  - E → D: 20 missões
+  - D → C: 40 missões
+  - … sempre dobrando
+- Missões:
+  - Título + descrição criativa.
+  - Recompensas: XP, cobre, itens.
+  - Botão **Loop** para repetir até acabar stamina.
+- Histórico:
+  - Últimas 15 missões listadas.
+  - Drops exibidos com **ícones reais** (catálogo → `/public/images/items/...`).
+  - Moldura colorida por raridade (badge pequeno: quadrado com borda + ícone + nome reduzido).
+  - Tooltip simples: nome do item + raridade.
+
+### 🏞️ Praça
+- Sempre exibe **3 missões aleatórias**.
+- Missões rápidas (3s).
+- Também com barra de progresso + loop.
+
+### 🎁 Loot
+- Sorteio ponderado por raridade:
+  - Comum → **cinza claro**
+  - Incomum → **verde**
+  - Raro → **azul**
+  - Épico → **roxo**
+  - Lendário → **laranja**
+  - Mítico → **dourado**
+- Itens caem no inventário, com nome, ícone e raridade.
+- **MissionResultModal** exibe recompensas com a mesma lógica de moldura colorida + ícone.
+
+### 💾 Save
+- Save único por máquina em `localStorage`.
+- Implementado com **dirty flag**:
+  - Salva só quando o estado muda.
+  - Flush em intervalos + `beforeunload`/`visibilitychange`.
+- Ao **deletar conta**, volta para criação de personagem.
+
+---
+
+## 🛠️ Stack
+- **Next.js 14 (App Router)**
+- **React 18**
+- **TypeScript**
 - **TailwindCSS**
-- **SQLite local (autosave client-side)** — sem API/Prisma
-- **Autosave multi-slot**: até 5 saves por usuário (`userId:slot:playerId`), persistido localmente no navegador.
+- **lucide-react** (ícones)
+- **framer-motion** (animações)
 
-## 🎮 Gameplay e Features
-- **Atributos do jogador**: força, destreza, vigor, arcano, carisma, sagacidade.
-- **Economia**: moedas (ouro, prata, bronze, cobre), conversão interna para cobre.
-- **Inventário**: itens, equipamentos, poções, kits de reparo, durabilidade exposta na UI.
-- **Guilda**:
-  - Contratos (15+ missões) com rank F→SSS.
-  - Afinidade com missões (quanto mais repetir, maior chance de sucesso).
-  - Afinidade com NPCs (sinergia se repetir interações).
-  - Promoção de rank automática baseada em contratos concluídos.
-  - Filtros/ordenação por rank, duração, risco, recompensa.
-  - Cadeia de contratos com recompensa épica final.
-  - Indicador visual de progresso para próximo rank.
-- **Combate simulado**:
-  - `simulateCombat` considera atributos, buffs/debuffs, armas/armaduras e damageModel.
-  - Derrota aplica debuffs reais (hpLoss, durabilidade, penalidades).
-- **Drops**: sistema de loot aleatório diferenciado por missão (itens, moedas, XP).
-- **Mercado**: ofertas rotativas a cada 6h com preço/estoque.
-- **Crafting**: receitas (RECIPES) para criar equipamentos/consumíveis.
-- **HUD/Header**: mostra nome, rank, HP, moedas e relógio interno.
-- **Modal de resultados**: exibe loot, XP, moedas, chance real e dano recebido.
+---
 
-## ✅ Melhorias já implementadas
-- Afinidade de missões e NPC reintroduzidas e amarradas ao playerId.
-- Debug overlay mostrando playerId, rank, contratos e afinidades.
-- Sistema de reparo de itens (kit ou ferreiro).
-- Modal de resultado mais completo.
-- Inventário global, persistido por save.
-- Promoção de rank revalidada em cada missão.
-- Filtros de guilda (rank, risco, duração, recompensa).
+## 📌 Próximos Passos
+- Molduras visuais no inventário (**parcialmente feito**: já no histórico e no modal).
+- Sistema de combate mais profundo.
+- Taverna funcional (descanso recupera stamina/HP).
+- Ofertas diárias no mercado.
+- Reputação com NPCs.
 
-## 🐞 Problemas e Correções Frequentes
-1. **`'use client'` no Next.js 14**  
-   - Sempre precisa estar na primeira linha.  
-   - Erro clássico: *The 'use client' directive must be placed before other expressions*.
+---
 
-2. **Estado e Save multi-slot**  
-   - Bugs de estado compartilhado entre saves.  
-   - Corrigido usando `userId:slot:playerId` como chave única.
-
-3. **Promoção de rank**  
-   - Falhas por falta de import (`getNextRank`, `countCompletedAtOrAbove`).  
-   - Hoje: usa `canPromote`, `rankThresholds` e helpers importados de `rankProgress.ts`.
-
-4. **Função `undertakeQuest`** (a mais problemática)  
-   - Variável `res` usada dentro do `setState` sem estar definida.  
-   - Uso de `mul` inexistente.  
-   - `return` no lugar errado → sintaxe quebrada.  
-   - **Correção final**: calcular `res = simulateCombat(...)` **antes** do `setState` e só usar depois.
-
-5. **Imports duplicados/mal formatados**  
-   - Ex: juntar `import React` com `import rankProgress` na mesma linha → erro de sintaxe.
-
-6. **ID de player**  
-   - `newId()` não existia → substituído por `crypto.randomUUID()`.
-
-7. **Afinidade**  
-   - Foi removida sem querer em patches → recriada e persistida em `player.npcAffinity` e `player.missionAffinity`.
-
-8. **Inventário**  
-   - Inicialmente não persistia ou mostrava itens.  
-   - Hoje é global, persistido no provider e renderizado na UI.
-
-## 🚨 Notas para IA / Futuro Dev
-- **Nunca remover funcionalidades existentes** sem aviso (ex: afinidade, drops).  
-- **Revisar o projeto inteiro antes de aplicar patches** para não quebrar saves ou UI.  
-- **Ao alterar `undertakeQuest`, revisar se `res`, afinidades e promoção de rank continuam funcionando.**  
-- **Validação rigorosa em imports**: sempre separar `React` e `rankProgress`.  
-- **Manter compatibilidade entre Praça e Guilda** (missões).  
-- **Itens, inventário, moedas, XP, atributos, skills, debuffs, afinidades e contratos devem sempre ser player-scoped.**
-
-## 📜 Histórico
-- Versão inicial previa API `/api/players` com Prisma + SQLite.
-- **Simplificado para singleplayer**: hoje usa apenas autosave local multi-slot, sem backend/API.
+## 👑 Créditos
+Projeto *Game do Will* — evolução contínua com base em feedback e patchs incrementais.  

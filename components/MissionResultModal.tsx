@@ -42,10 +42,16 @@ export default function MissionResultModal(){
               <div className="opacity-80 mb-1">Drops:</div>
               <div className="flex flex-wrap gap-2">
                 {res.drops.map((d:any)=> (
-                  <div key={d.id} className="px-2 py-1 text-xs rounded bg-black/30 border border-amber-900/40">
-                    {(findCatalogItem(d.id)?.name||d.id)} × {d.qty}
-                  </div>
-                ))}
+                  (d:any)=> (
+                    <div key={d.id} className="px-2 py-1 text-xs rounded bg-black/30 border border-amber-900/40">
+                      <div className="flex items-center gap-2">
+                        <div className={'w-8 h-8 rounded-md ring-2 bg-black/40 p-0.5 flex items-center justify-center ' + (d.rarity==='mítico'?'ring-amber-400': d.rarity==='lendário'?'ring-orange-400': d.rarity==='épico'?'ring-violet-400': d.rarity==='raro'?'ring-blue-400': d.rarity==='incomum'?'ring-emerald-400':'ring-gray-400')} title={(d.name||'Item') + (d.rarity? ' — '+d.rarity : '')}>
+                          <img src={(d.icon?.startsWith('/')? d.icon : '/'+(d.icon||'')) || '/images/items/unknown.png'} className="w-full h-full object-contain" />
+                        </div>
+                        <div className="text-xs font-medium max-w-[12rem] truncate">{d.name}</div>
+                      </div>
+                    </div>
+                  )))}
               </div>
             </div>
           )}

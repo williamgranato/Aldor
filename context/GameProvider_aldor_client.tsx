@@ -185,7 +185,7 @@ export function GameProvider({ children }:{children:React.ReactNode}){
   }, [state.player.attributes.intelligence]);
 
   useEffect(()=>{
-    const isNew = !state?.player?.character?.origin || state.player.character.name === 'Aventureiro';
+    const isNew = (!state?.player?.character?.origin) && (!state?.player?.character?.name || state.player.character.name === 'Aventureiro');
     if(isNew && pathname !== '/create-character'){
       router.replace('/create-character');
     }

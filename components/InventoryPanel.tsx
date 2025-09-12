@@ -19,7 +19,7 @@ export default function InventoryPanel({inventory,onEquip,onUse,onDiscard,onInsp
         <DeltaStatBadge deltas={{atk:it.atk||0}}/>
         <div className="mt-1 flex gap-1 flex-wrap">
           {onEquip&&it.slot&&<button onClick={()=>onEquip(it)} className="px-2 bg-emerald-700 rounded text-xs">Equipar</button>}
-          {onUse&&it.type==='consumível'&&<button onClick={()=>onUse(it)} className="px-2 bg-amber-600 rounded text-xs">Usar</button>}
+          {onUse&&(it.type==='consumível'||it.type==='poção'||it.type==='comida')&&<button onClick={()=>onUse(it)} className="px-2 bg-amber-600 rounded text-xs">Usar</button>}
           {onInspect&&<button onClick={()=>onInspect(it)} className="px-2 bg-indigo-700 rounded text-xs">Ver mais</button>}
         </div>
       </div>);
