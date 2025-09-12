@@ -5,10 +5,10 @@ import { motion } from 'framer-motion';
 
 type MissionCardProps = {
   mission: any;
-  onComplete?: () => void;          // chamado quando termina a missão (3s)
+  onComplete?: () => void;
   onLoopChange?: (active: boolean) => void;
-  canStart?: () => boolean;         // consulta stamina antes de iniciar/loopar
-  successChance?: (mission:any) => number; // função fornecida pela page
+  canStart?: () => boolean;
+  successChance?: (mission:any) => number;
 };
 
 const rankColor = (r:string)=>{
@@ -26,7 +26,6 @@ const rankColor = (r:string)=>{
 
 const coinIcon = (k:string)=>{
   const key = k.toLowerCase();
-  // caminhos conforme pedido: /image/copper.png | bronze.png | silver.png | gold.png
   if(key.includes('gold')) return '/image/gold.png';
   if(key.includes('silver')) return '/image/silver.png';
   if(key.includes('bronze')) return '/image/bronze.png';
@@ -44,30 +43,22 @@ export default function MissionCard({ mission, onComplete, onLoopChange, canStar
   const DURATION = 3000;
 
   const startRun = ()=>{
-    if(canStart && !canStart()) {
-      // sem stamina
-      return;
-    }
+    if(canStart && !canStart()) return;
     setActive(true);
     setProgress(0);
     setCountdown(3);
-    // contador visual sincronizado
     const start = Date.now();
     tickRef.current = setInterval(()=>{
       const elapsed = Date.now() - start;
       const left = Math.max(0, DURATION - elapsed);
       setCountdown(Math.ceil(left/1000));
     },100);
-    // finalização exata
     timerRef.current = setTimeout(()=>{
       setActive(false);
       setProgress(0);
       clearInterval(tickRef.current);
       onComplete && onComplete();
-      if(looping){
-        // tenta iniciar novo ciclo
-        startRun();
-      }
+      if(looping) startRun();
     }, DURATION);
   };
 
@@ -82,9 +73,7 @@ export default function MissionCard({ mission, onComplete, onLoopChange, canStar
     const nv = !looping;
     setLooping(nv);
     onLoopChange && onLoopChange(nv);
-    if(nv && !active){
-      startRun(); // inicia imediatamente se ativar loop
-    }
+    if(nv && !active) startRun();
   };
 
   const coins = mission?.rewards?.coins || null;
@@ -97,7 +86,6 @@ export default function MissionCard({ mission, onComplete, onLoopChange, canStar
       transition={{ duration:0.35 }}
       className={`space-y-3 rounded-2xl p-4 border border-white/10 shadow-lg bg-black/30 ${looping?'ring-2 ring-emerald-400':''}`}
     >
-      {/* Header: Rank + Título */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="px-2 py-1 rounded bg-sky-600/30 border border-sky-400 flex items-center gap-1 text-sky-300 text-xs">
@@ -115,10 +103,8 @@ export default function MissionCard({ mission, onComplete, onLoopChange, canStar
         </motion.button>
       </div>
 
-      {/* Descrição */}
       <p className="text-sm opacity-80">{mission.description}</p>
 
-      {/* Linha de metadados */}
       <div className="flex flex-wrap items-center gap-3 text-xs text-gray-300">
         <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> 3s</span>
         <span className="flex items-center gap-1"><Zap className="w-3 h-3"/> {(mission.cost||5)} Stamina</span>
@@ -128,7 +114,6 @@ export default function MissionCard({ mission, onComplete, onLoopChange, canStar
         )}
       </div>
 
-      {/* Recompensas em moedas */}
       {coins && (
         <div className="text-xs flex items-center gap-3 flex-wrap">
           <div className="opacity-70">Moedas:</div>
@@ -142,7 +127,6 @@ export default function MissionCard({ mission, onComplete, onLoopChange, canStar
         </div>
       )}
 
-      {/* Drops com chance */}
       {mission.drops && mission.drops.length>0 && (
         <div className="text-xs">
           <div className="opacity-70">Possíveis drops:</div>
@@ -157,7 +141,6 @@ export default function MissionCard({ mission, onComplete, onLoopChange, canStar
         </div>
       )}
 
-      {/* Barra de progresso com contador central */}
       {active && (
         <div className="relative w-full h-3 bg-black/40 rounded overflow-hidden">
           <motion.div 
@@ -173,7 +156,6 @@ export default function MissionCard({ mission, onComplete, onLoopChange, canStar
         </div>
       )}
 
-      {/* Botão iniciar */}
       <motion.button
         onClick={startRun}
         disabled={active || (canStart && !canStart())}
