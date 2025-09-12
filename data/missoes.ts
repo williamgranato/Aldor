@@ -17,7 +17,7 @@ export type PracaMission = {
 };
 
 // Base 10s para rank F
-const BASE_DURATION = 10_000;
+const BASE_DURATION = 3_000;
 
 export const PRACA_MISSIONS: PracaMission[] = [
   { id: 'praca:entregar-carta', title: 'Entregar carta', desc: 'Leve uma carta ao bairro vizinho.', category: 'praca', requiredRank: 'F', allowNonMember: true, durationMs: BASE_DURATION, rewards: { xp: 12, copper: 35 } },

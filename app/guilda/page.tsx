@@ -7,7 +7,6 @@ import type { Mission } from '@/components/guild/MissionCard';
 import { useToasts } from '@/components/ToastProvider';
 import { copperToCoins } from '@/utils/money_aldor_client';
 import * as itemsCatalog from '@/data/items_catalog';
-import { enemyForRank, simulateCombat } from '@/utils/combat_aldor_client';
 
 type Tier = 'F'|'E'|'D'|'C'|'B'|'A'|'S'|'SS'|'SSS';
 const ORDER: Tier[] = ['F','E','D','C','B','A','S','SS','SSS'];
@@ -79,16 +78,6 @@ export default function GuildaPage(){
     setActiveId(null);
     setRemainingMs(0);
 
-    // v2: simulate combat & apply HP loss
-    try{
-      const enemy = enemyForRank(m.tier as any);
-      const difficulty = Math.max(0.75, 1 + (ORDER.indexOf(m.tier as any)/10));
-      const sim = simulateCombat(state?.player, enemy, { difficultyMultiplier: difficulty });
-      const hpNow = (state?.player?.stats?.hp ?? 30);
-      const hpLoss = Math.max(0, hpNow - (sim.php ?? hpNow));
-      if(hpLoss>0){ g.changeHP?.(-hpLoss); }
-      // TODO: optionally gate rewards by sim.win
-    }catch{}
     // Aplicar recompensas 1x (XP, moedas, drops)
     if(m.reward?.xp) giveXP?.(m.reward.xp);
     if(m.reward?.coinsCopper) giveCoins?.({ copper: m.reward.coinsCopper });

@@ -1,108 +1,62 @@
 'use client';
-import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
-import { useAuth } from '@/context/AuthProvider_aldor_client';
-import SaveManagerModal from '@/components/SaveManagerModal';
-import { copperToCoins, coinsToCopper } from '@/utils/money_aldor_client';
+import SaveManagerModal from './SaveManagerModal';
+import { motion } from 'framer-motion';
+import { Heart, Zap, Coins } from 'lucide-react';
 
-const RANK_LABEL: Record<string,string> = {
-  'F':'F – Iniciante','E':'E – Aprendiz','D':'D – Operário','C':'C – Veterano',
-  'B':'B – Elite','A':'A – Mestre','S':'S – Herói','SS':'SS – Lenda','SSS':'SSS – Mítico','Sem Guilda':'Sem Guilda'
-};
-const SEASON_ICON: Record<string,string> = { 'Primavera':'🌸','Verão':'☀️','Outono':'🍂','Inverno':'❄️' };
-const WEATHER_ICON: Record<string,string> = { 'Ensolarado':'☀️','Nublado':'☁️','Chuva':'🌧️','Neve':'❄️','Vento':'🌬️' };
-
-function formatDate(ms:number){
-  const d = new Date(ms);
-  const dd = String(d.getDate()).padStart(2,'0');
-  const mm = String(d.getMonth()+1).padStart(2,'0');
-  const yyyy = d.getFullYear();
-  const hh = String(d.getHours()).padStart(2,'0');
-  const nn = String(d.getMinutes()).padStart(2,'0');
-  const ss = String(d.getSeconds()).padStart(2,'0');
-  return `${dd}/${mm}/${yyyy} ${hh}:${nn}:${ss}`;
+function CoinInline({ type, amount }:{type:'gold'|'silver'|'bronze'|'copper'; amount:number}){
+  const src = `/images/items/${type}.png`;
+  return <span className="inline-flex items-center gap-1"><img src={src} alt={type} className="w-4 h-4"/><span>{amount}</span></span>;
 }
 
 export default function AppHeader(){
-  const { state } = useGame();
-  const { logout } = useAuth();
-  const player = state.player;
-  const world = state.world;
-  const season = world?.season || 'Primavera';
-  const weather = world?.weather || 'Ensolarado';
+  const { state, resetSave } = useGame();
+  const [showSave,setShowSave]=useState(false);
+  const player=state.player;
 
-  const [mounted,setMounted] = useState(false);
-  const [clock,setClock] = useState<number>(0); // evita Date.now() no SSR
-  const [showSaveManager,setShowSaveManager] = useState(false); // <<< faltava isso
-
-  useEffect(()=>{
-    setMounted(true);
-    setClock(Date.now());
-    const t=setInterval(()=>setClock(Date.now()),1000);
-    return()=>clearInterval(t);
-  },[]);
-
-  const rank = player?.adventurerRank || 'Sem Guilda';
-  const rankLabel = RANK_LABEL[rank] || rank;
-
-  const xp = player?.xp || 0;
-  const level = player?.level || 1;
-  const hp = player?.stats?.hp || 0;
-  const maxHp = player?.stats?.maxHp || 0;
-  const stamina = player?.stamina?.current ?? 0;
-  const maxStamina = player?.stamina?.max ?? 200;
-  const coins = player?.coins || {gold:0,silver:0,bronze:0,copper:0};
-  const displayCoins = copperToCoins(coinsToCopper(coins));
-
-  const staminaPct = useMemo(()=> Math.min(100, Math.max(0, Math.round((stamina / (maxStamina||1))*100))), [stamina,maxStamina]);
+  const xpPct=(player.xp%(player.level*100))/(player.level*100);
+  const hpPct=player.stats.hp/player.stats.maxHp;
+  const stamPct=player.stamina.current/player.stamina.max;
 
   return (
-    <div className="w-full border-b border-zinc-800 text-zinc-100 bg-zinc-900/70">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <motion.div initial={{y:-40,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:0.5}} className="sticky top-0 z-50 bg-slate-900/70 backdrop-blur-md border-b border-amber-900/40 shadow-md">
+      <div className="flex items-center justify-between px-4 py-2 text-sm text-amber-100">
         <div className="flex items-center gap-3">
-          <Image src="/images/logo.png" alt="Aldor" width={48} height={48} />
           <div>
-            <div className="font-bold text-lg">{player?.character?.name || 'Aventureiro'}</div>
-            <div className="text-sm opacity-90">Rank 🏅 {rankLabel} • Nível ⚔️ {level}</div>
+            <div className="font-bold">{player.character.name} (Nv {player.level})</div>
+            <div className="w-40 h-2 bg-slate-700 rounded overflow-hidden mt-1">
+              <motion.div initial={{width:0}} animate={{width:`${xpPct*100}%`}} transition={{duration:0.5}} className="h-full bg-gradient-to-r from-blue-500 to-purple-600"/>
+            </div>
           </div>
         </div>
-        <div className="hidden md:flex flex-col items-center text-xs select-none">
-          <div className="font-medium" suppressHydrationWarning>
-            ⏰ {mounted ? formatDate(clock) : '—/—/— —:—:—'}
-          </div>
-          <div className="opacity-90" suppressHydrationWarning>
-            {SEASON_ICON[season]} {season} • {WEATHER_ICON[weather]} {weather}
-          </div>
-        </div>
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex flex-col gap-1 text-xs">
-            <span>XP: {xp}</span>
-            <span>HP: {hp}/{maxHp}</span>
-            <span className="min-w-[180px]">Stamina: {stamina}/{maxStamina}</span>
-            {/* Barra animada de stamina */}
-            <div className="relative w-48 h-2.5 rounded-full overflow-hidden bg-zinc-800 ring-1 ring-black/40">
-              <div
-                className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-amber-400 via-amber-300 to-amber-200 transition-all duration-700 ease-out"
-                style={{ width: `${staminaPct}%` }}
-              />
-              {/* brilho animado */}
-              <div className="absolute inset-0 pointer-events-none mix-blend-screen">
-                <div className="w-16 h-full bg-white/20 blur-md animate-pulse" />
-              </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Heart className="w-4 h-4 text-red-500"/>
+            <div className="w-28 h-2 bg-slate-700 rounded overflow-hidden">
+              <motion.div animate={{width:`${hpPct*100}%`}} transition={{duration:0.5}} className="h-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.7)]"/>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1"><Image src="/images/items/gold.png" alt="Ouro" width={16} height={16} />{displayCoins.gold||0}</span>
-            <span className="flex items-center gap-1"><Image src="/images/items/silver.png" alt="Prata" width={16} height={16} />{displayCoins.silver||0}</span>
-            <span className="flex items-center gap-1"><Image src="/images/items/bronze.png" alt="Bronze" width={16} height={16} />{displayCoins.bronze||0}</span>
-            <span className="flex items-center gap-1"><Image src="/images/items/copper.png" alt="Cobre" width={16} height={16} />{displayCoins.copper||0}</span>
+            <Zap className="w-4 h-4 text-green-400"/>
+            <div className="w-28 h-2 bg-slate-700 rounded overflow-hidden">
+              <motion.div animate={{width:`${stamPct*100}%`}} transition={{duration:0.5}} className="h-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.7)]"/>
+            </div>
           </div>
-          <button onClick={()=>setShowSaveManager(true)} className="px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-black text-xs">Trocar Save</button>
-          <button onClick={logout} className="px-2 py-1 rounded bg-red-600 hover:bg-red-500 text-black text-xs">Sair</button>
+          <div className="flex items-center gap-2">
+            <Coins className="w-4 h-4 text-amber-400"/>
+            <div className="flex gap-1">
+              <CoinInline type="gold" amount={player.coins.gold}/>
+              <CoinInline type="silver" amount={player.coins.silver}/>
+              <CoinInline type="bronze" amount={player.coins.bronze}/>
+              <CoinInline type="copper" amount={player.coins.copper}/>
+            </div>
+          </div>
+          <button onClick={()=>setShowSave(true)} className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700">Trocar Save</button>
+          <button onClick={()=>resetSave()} className="px-2 py-1 rounded bg-red-700 hover:bg-red-600">Deletar Conta</button>
         </div>
       </div>
-      {showSaveManager && <SaveManagerModal onClose={()=>setShowSaveManager(false)} />}
-    </div>
+      {showSave && <SaveManagerModal onClose={()=>setShowSave(false)}/>}
+    </motion.div>
   );
 }

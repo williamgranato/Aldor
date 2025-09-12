@@ -1,299 +1,140 @@
 'use client';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { GameState, PlayerState, SaveBlob, CoinPouch } from '@/types_aldor_client';
-import { coinsToCopper, copperToCoins, addPouch, subPouch } from '@/utils/money_aldor_client';
+import React, { useState, useRef, useEffect, useContext, createContext } from 'react';
+import { useRouter } from 'next/navigation';
+import type { GameState, CoinPouch, Rank } from '@/types_aldor_client';
+import { addPouch } from '@/utils/money_aldor_client';
 
-const STORAGE_KEY_PREFIX = 'aldor_save_slot_';
-
-function safeLocalStorage(){
-  if (typeof window === 'undefined') return null as any;
-  try { return window.localStorage; } catch { return null as any; }
-}
-
-function loadSlotFromStorage(slot:number): SaveBlob | null {
-  const ls = safeLocalStorage(); if(!ls) return null;
-  try { const raw = ls.getItem(STORAGE_KEY_PREFIX+slot); return raw ? JSON.parse(raw) as SaveBlob : null; } catch { return null; }
-}
-function saveSlotToStorage(slot:number, data:SaveBlob){
-  const ls = safeLocalStorage(); if(!ls) return;
-  try { ls.setItem(STORAGE_KEY_PREFIX+slot, JSON.stringify(data)); } catch {}
-}
-function clearSlotInStorage(slot:number){
-  const ls = safeLocalStorage(); if(!ls) return;
-  try { ls.removeItem(STORAGE_KEY_PREFIX+slot); } catch {}
-}
-
-const defaultPlayer: PlayerState = {
-  id: (typeof crypto!=='undefined' && (crypto as any).randomUUID ? (crypto as any).randomUUID() : String(Date.now())),
-  character: { id:'hero', name:'Aventureiro', origin:'Sem Origem', race:'Humano', roleKey:'guerreiro', raceKey:'humano' } as any,
-  guildRank: 0,
-  adventurerRank: 'Sem Guilda',
-  xp: 0, level: 1, statPoints: 0,
-  attributes: { strength: 5, agility: 5, intelligence: 5, vitality: 5, luck: 5 },
-  stats: { hp: 100, maxHp: 100, attack: 10, defense: 5, crit: 0.05 },
-  stamina: { current: 200, max: 200, lastRefillDay: 0 },
-  status: [],
-  coins: { gold:0, silver:0, bronze:0, copper:0 },
-  inventory: [],
-  skills: {},
-  equipped: {}
-};
+type Ctx = any;
 
 const defaultState: GameState = {
-  version: 3,
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
-  player: defaultPlayer,
-  guild: { isMember:false, completedQuests:[], activeQuests:[], memberCard: undefined } as any,
-  market: { catalog: [] } as any,
-  world: { dateMs: Date.now(), season:'Primavera', weather:'Ensolarado', temperatureC:22 } as any,
+  player: {
+    id: 'player1',
+    character: { id:'char1', name:'Aventureiro', origin:'Desconhecido', role:'guerreiro', race:'humano' },
+    guildRank: 0,
+    adventurerRank: 'Sem Guilda',
+    xp: 0,
+    level: 1,
+    statPoints: 0,
+    attributes: { strength:1, agility:1, intelligence:1, vitality:1, luck:0 },
+    stats: { hp:30, maxHp:30, attack:5, defense:2, crit:0 },
+    stamina: { current:10, max:10, lastRefillDay: Date.now() },
+    status: [],
+    coins: { gold:0, silver:0, bronze:0, copper:0 },
+    inventory: [],
+    skills: {}
+  },
+  guild: { isMember:false, completedQuests:[], activeQuests:[] },
+  world: { dateMs: Date.now() },
   ui: { headerStyle: 'modern' }
-};
-
-type Ctx = {
-  state: GameState; setState: React.Dispatch<React.SetStateAction<GameState>>;
-  slot: number; setSlot: (n:number)=>void;
-  clearSlot:(n?:number)=>void; loadSlot:(n?:number)=>void; saveCurrentSlot:()=>void;
-  // helpers
-  giveXP:(amount:number)=>void; addXP:(amount:number)=>void;
-  giveCoins:(p:Partial<CoinPouch>)=>void; addCoins:(p:Partial<CoinPouch>)=>void;
-  spendStamina:(amount:number)=>boolean;
-  changeHP:(delta:number)=>void;
-  ensureMemberCard:()=>void;
-  logGuildEvent:(entry:any)=>void;
-  // new inventory helpers
-  item_equip?:(slot:string,item:any)=>void;
-  item_unequip?:(slot:string)=>void;
-  use_item?:(item:any)=>void;
-  removeItem?:(id:string,qty:number)=>void;
-  equip?:(slot:string,item:any)=>void;
-  unequip?:(slot:string)=>void;
 };
 
 const GameContext = createContext<Ctx|null>(null);
 
-export function GameProviderClient({ children }:{children:React.ReactNode}){
-  const [slot, setSlot] = useState<number>(1);
+export function GameProvider({ children }:{children:React.ReactNode}){
+  const router = useRouter();
   const [state, setState] = useState<GameState>(defaultState);
-  const saveTimer = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const dirtyRef = useRef(false);
+  function markDirty(){ dirtyRef.current = true; }
 
-  // bootstrap load
-  useEffect(()=>{
-    const loaded = loadSlotFromStorage(slot);
-    if(loaded){ setState(loaded as any); } else { saveSlotToStorage(slot, defaultState as any); }
-  }, [slot]);
-
-  function scheduleSave(next?:GameState){
-    if(saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(()=>{
-      const blob = (next ?? state) as any as SaveBlob;
-      saveSlotToStorage(slot, { ...(blob as any), updatedAt: Date.now() });
-    }, 150);
+  // === Persistência (save único com dirty flag) ===
+  const saveKey = 'aldor_save';
+  function saveNow(blob:any){ try{ localStorage.setItem(saveKey, JSON.stringify({ ...(blob as any), updatedAt: Date.now() })); }catch{} dirtyRef.current=false; }
+  function loadSave(){ try{ const raw = localStorage.getItem(saveKey); if(raw) return JSON.parse(raw); }catch{} return null; }
+  function resetSave(){
+    try{ localStorage.removeItem(saveKey); }catch{}
+    setState(defaultState as any);
+    dirtyRef.current = true;
+    router.push('/create-character');
   }
-  function saveCurrentSlot(){ scheduleSave(); }
+  function createCharacter(payload: { name:string; role:string; race:string; origin:string; attributes?: Partial<GameState['player']['attributes']> }){
+    setState(prev=>{
+      const attrs = { ...prev.player.attributes, ...(payload.attributes||{}) };
+      const character = { id:'char1', name: payload.name, origin: payload.origin, role: payload.role, race: payload.race };
+      const player = { ...prev.player, character, attributes: attrs, level:1, xp:0, statPoints:0, coins:{ gold:0,silver:0,bronze:0,copper:0 }, inventory:[] };
+      return { ...prev, player };
+    });
+    markDirty();
+    router.push('/');
+  }
 
+  // Load inicial
+  useEffect(()=>{ const l = loadSave(); if(l) setState(l as any); },[]);
+
+  // Autosave loop
+  useEffect(()=>{
+    const id = setInterval(()=>{ if(dirtyRef.current) saveNow(state); }, 1000);
+    const flush = ()=>{ if(dirtyRef.current) saveNow(state); };
+    window.addEventListener('beforeunload', flush);
+    window.addEventListener('visibilitychange', flush);
+    return ()=>{ clearInterval(id); window.removeEventListener('beforeunload', flush); window.removeEventListener('visibilitychange', flush); };
+  },[state]);
+
+  // === Helpers de gameplay (mínimos, preservando contratos) ===
   function giveXP(amount:number){
     if(!amount) return;
     setState(prev=>{
-      const xp = Math.max(0, (prev.player?.xp ?? 0) + Math.floor(amount));
-      let level = prev.player?.level ?? 1;
-      while(xp >= level*100) level++;
-      const player = { ...prev.player, xp, level };
+      const xp = Math.max(0, prev.player.xp + Math.floor(amount));
+      let level = prev.player.level;
+      let statPoints = prev.player.statPoints;
+      while(xp >= level*100){ level++; statPoints++; }
+      const player = { ...prev.player, xp, level, statPoints };
       return { ...prev, player };
     });
-    scheduleSave();
+    markDirty();
   }
-  const addXP = giveXP;
-
   function giveCoins(p:Partial<CoinPouch>){
     if(!p) return;
     setState(prev=>{
-      const pouch = addPouch(prev.player?.coins ?? {gold:0,silver:0,bronze:0,copper:0}, p);
-      const player = { ...prev.player, coins: pouch };
-      return { ...prev, player };
+      const pouch = addPouch(prev.player.coins, p);
+      return { ...prev, player: { ...prev.player, coins: pouch } };
     });
-    scheduleSave();
+    markDirty();
   }
-  const addCoins = giveCoins;
-
   function spendStamina(amount:number){
-    let ok = true;
     setState(prev=>{
-      const st = prev.player?.stamina ?? { current:0, max:200, lastRefillDay:0 };
-      if(st.current < amount){ ok=false; return prev; }
-      const player = { ...prev.player, stamina: { ...st, current: st.current - amount } };
-      return { ...prev, player };
+      const st = prev.player.stamina;
+      if(st.current < amount) return prev;
+      return { ...prev, player:{ ...prev.player, stamina: { ...st, current: st.current - amount } } };
     });
-    if(ok) scheduleSave();
-    return ok;
+    markDirty();
+    return true;
   }
-
   function changeHP(delta:number){
     setState(prev=>{
-      const st = prev.player?.stats ?? { hp:100, maxHp:100 } as any;
-      let hp = (st.hp ?? 100) + Math.floor(delta);
-      const maxHp = st.maxHp ?? 100;
-      hp = Math.max(0, Math.min(maxHp, hp));
-      const stats = { ...st, hp };
-      const player = { ...prev.player, stats };
-      return { ...prev, player };
+      const st = prev.player.stats;
+      const hp = Math.max(0, Math.min(st.maxHp, st.hp + delta));
+      return { ...prev, player:{ ...prev.player, stats: { ...st, hp } } };
     });
-    scheduleSave();
+    markDirty();
   }
-
   function ensureMemberCard(){
     setState(prev=>{
-      const g = prev.guild ?? ({} as any);
-      if(g.isMember) return prev;
-      const card = {
-        name: prev.player?.character?.name ?? 'Aventureiro',
-        origin: prev.player?.character?.origin ?? 'Desconhecido',
-        role: prev.player?.character?.roleKey ?? 'guerreiro',
-        createdAt: Date.now()
-      };
-      return { ...prev, guild: { ...g, isMember: true, memberCard: card } };
+      if(prev.guild.isMember) return prev;
+      const card = { name: prev.player.character.name, origin: prev.player.character.origin, role: prev.player.character.role, rank: 'F' as Rank };
+      return { ...prev, guild: { ...prev.guild, isMember: true, memberCard: card } };
     });
-    scheduleSave();
+    markDirty();
   }
-
-  
-
-  // Registers the player into the Guild, charging 1 silver (or equivalent in copper).
-  function registerInGuild(origin?: string): boolean {
-    let ok = false;
-    setState(prev => {
-      const player = prev.player || {} as any;
-      const pouch = player.coins || { gold:0, silver:0, bronze:0, copper:0 };
-      const after = subPouch(pouch, { silver: 1 });
-      // if not enough coins, do nothing
-      if (coinsToCopper(pouch) < 100) return prev;
-      ok = true;
-      const g = prev.guild ?? ({} as any);
-      const card = {
-        name: player?.character?.name ?? 'Aventureiro',
-        origin: origin ?? player?.character?.origin ?? 'Desconhecido',
-        role: player?.character?.roleKey ?? 'guerreiro',
-        createdAt: Date.now()
-      };
-      const newPlayer = { ...player, coins: after, adventurerRank: player?.adventurerRank ?? 'F' };
-      return { ...prev, player: newPlayer, guild: { ...g, isMember: true, memberCard: card } };
+  function logGuildEvent(entry:any){
+    setState(prev=>{
+      const cq = prev.guild.completedQuests ?? [];
+      return { ...prev, guild: { ...prev.guild, completedQuests: [...cq, { id: entry?.id || 'evt', rank: entry?.rank || 'F', at: Date.now() }] } };
     });
-    if (ok) scheduleSave();
-    return ok;
+    markDirty();
   }
-function logGuildEvent(entry:any){
-    setState(prev=>{
-      const g = prev.guild ?? ({} as any);
-      const logs = (g.logs ?? []) as any[];
-      return { ...prev, guild: { ...g, logs: [...logs, entry] } };
-    });
-    scheduleSave();
-  }
-
-  // passive stamina regen
-  useEffect(()=>{
-    const id = setInterval(()=>{
-      setState(prev=>{
-        const st = prev.player?.stamina ?? { current:0, max:200, lastRefillDay:0 };
-        if(st.current >= st.max) return prev;
-        const player = { ...prev.player, stamina: { ...st, current: st.current + 1 } };
-        return { ...prev, player };
-      });
-      scheduleSave();
-    }, 3000);
-    return ()=> clearInterval(id);
-  },[]);
-
-  // === New Inventory Helpers ===
-  const removeItem=(id:string,qty:number)=>{
-    setState(prev=>{
-      const items=[...(prev.player.inventory as any[]||[])];
-      const i=items.findIndex(x=>x.id===id);
-      if(i>=0){
-        const left=(items[i].qty||0)-qty;
-        if(left<=0) items.splice(i,1);
-        else items[i]={...items[i],qty:left};
-      }
-      return {...prev,player:{...prev.player,inventory:items}};
-    });
-    scheduleSave();
-  };
-
-  const item_equip=(slot:string,item:any)=>{
-    setState(prev=>{
-      const items=[...(prev.player.inventory as any[]||[])];
-      const idx=items.findIndex(x=>x.id===item.id);
-      if(idx>=0){
-        const left=(items[idx].qty||0)-1;
-        if(left<=0) items.splice(idx,1);
-        else items[idx]={...items[idx],qty:left};
-      }
-      const eq={...(prev.player.equipped||{})};
-      eq[slot]={itemId:item.id};
-      return {...prev,player:{...prev.player,inventory:items,equipped:eq}};
-    });
-    scheduleSave();
-  };
-
-  const item_unequip=(slot:string)=>{
-    setState(prev=>{
-      const eq={...(prev.player.equipped||{})};
-      const data=eq[slot];
-      if(!data?.itemId) return prev;
-      const items=[...(prev.player.inventory as any[]||[])];
-      const i=items.findIndex(x=>x.id===data.itemId);
-      if(i>=0) items[i]={...items[i],qty:(items[i].qty||0)+1};
-      else items.push({id:data.itemId,qty:1});
-      delete eq[slot];
-      return {...prev,player:{...prev.player,inventory:items,equipped:eq}};
-    });
-    scheduleSave();
-  };
-
-  const use_item=(item:any)=>{
-    setState(prev=>{
-      const items=[...(prev.player.inventory as any[]||[])];
-      const idx=items.findIndex(x=>x.id===item.id);
-      if(idx>=0){
-        const left=(items[idx].qty||0)-1;
-        if(left<=0) items.splice(idx,1);
-        else items[idx]={...items[idx],qty:left};
-      }
-      const p={...prev.player};
-      if(item.restoreHp){ p.stats={...p.stats,hp:Math.min(p.stats.maxHp,(p.stats.hp||0)+item.restoreHp)}; }
-      if(item.restoreSta){ p.stamina={...p.stamina,current:Math.min(p.stamina.max,(p.stamina.current||0)+item.restoreSta)}; }
-      return {...prev,player:p};
-    });
-    scheduleSave();
-  };
-
-  const equip=(slot:string,item:any)=> item_equip(slot,item);
-  const unequip=(slot:string)=> item_unequip(slot);
 
   const ctx: Ctx = {
     state, setState,
-    slot,
-    setSlot:(n:number)=>{ setSlot(n); },
-    clearSlot:(n?:number)=>{ clearSlotInStorage(n ?? slot); },
-    loadSlot:(n?:number)=>{ const l=loadSlotFromStorage(n ?? slot); if(l) setState(l as any); },
-    saveCurrentSlot,
-    giveXP, addXP,
-    giveCoins, addCoins,
-    spendStamina,
-    changeHP,
-    ensureMemberCard,
-    registerInGuild,
-    logGuildEvent,
-    item_equip,item_unequip,use_item,removeItem,equip,unequip
+    giveXP, giveCoins, spendStamina, changeHP,
+    ensureMemberCard, logGuildEvent,
+    resetSave, createCharacter
   };
 
   return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;
 }
 
-export const GameProvider = GameProviderClient;
-
 export function useGame(){
   const ctx = useContext(GameContext);
-  if(!ctx) throw new Error('useGame must be used inside GameProviderClient');
+  if(!ctx) throw new Error('useGame must be used inside GameProvider');
   return ctx;
 }
