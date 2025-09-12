@@ -1,142 +1,137 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Coins, Shield, ScrollText } from 'lucide-react';
 import { useGame } from '@/context/GameProvider_aldor_client';
-import { getGuildMissions } from '@/data/missions';
-import MissionList from '@/components/guild/MissionList';
-import type { Mission } from '@/components/guild/MissionCard';
-import { useToasts } from '@/components/ToastProvider';
-import { copperToCoins } from '@/utils/money_aldor_client';
-import * as itemsCatalog from '@/data/items_catalog';
+import MissionCard from '@/components/guild/MissionCard';
+import MissionResultModal from '@/components/guild/MissionResultModal';
 
-type Tier = 'F'|'E'|'D'|'C'|'B'|'A'|'S'|'SS'|'SSS';
-const ORDER: Tier[] = ['F','E','D','C','B','A','S','SS','SSS'];
-const idx = (t:Tier)=> ORDER.indexOf(t);
-const allowTier = (pt:Tier, mt:Tier)=> Math.abs(idx(pt)-idx(mt))<=1;
-const levelToTier = (level:number): Tier => {
-  if(level>=55) return 'SSS'; if(level>=45) return 'SS'; if(level>=35) return 'S';
-  if(level>=28) return 'A'; if(level>=22) return 'B'; if(level>=16) return 'C';
-  if(level>=10) return 'D'; if(level>=5) return 'E'; return 'F';
-};
+type Rank = 'F'|'E'|'D'|'C'|'B'|'A'|'S'|'SS'|'SSS';
+const ORDER: Rank[] = ['F','E','D','C','B','A','S','SS','SSS'];
+function rankThreshold(r:Rank){
+  const steps = Math.max(0, ORDER.indexOf(r)-ORDER.indexOf('F'));
+  return 10 * Math.pow(2, steps);
+}
+function randomMission(rank:Rank){
+  const baseXp = { F:10,E:20,D:40,C:60,B:90,A:120,S:180,SS:260,SSS:400 }[rank] || 10;
+  const baseCu = { F:20,E:40,D:80,C:120,B:160,A:220,S:300,SS:420,SSS:600 }[rank] || 20;
+  return {
+    id: 'm'+Math.random().toString(36).slice(2),
+    name: `Contrato ${rank}`,
+    rank,
+    description: `Um pedido adequado a aventureiros de rank ${rank}.`,
+    duration: 3000,
+    rewards: { xp: baseXp, copper: baseCu }
+  };
+}
 
-export default function GuildaPage(){
-  const g:any = useGame();
-  const { state, giveXP, giveCoins, logGuildEvent, registerInGuild, setState } = g;
-  const { add: pushToast } = useToasts();
+export default function GuildPage(){
+  const { state, giveCoins, spendStamina, ensureMemberCard, completeGuildMission } = useGame();
+  const isMember = state.guild.isMember;
+  const rank = (state.guild.memberCard?.rank || 'F') as Rank;
 
-  const isMember = state?.player?.guild?.isMember ?? false;
-  const level = state?.player?.level ?? 1;
-  const playerTier = state?.player?.adventurerRank ?? levelToTier(level);
+  // contador de progresso para o rank atual
+  const doneAtRank = (state.guild.completedQuests||[]).filter((q:any)=>q.rank===rank).length;
+  const needAtRank = rankThreshold(rank);
 
-  // MISSÕES (client-only para evitar hydration mismatch)
-  const [missions, setMissions] = useState<Mission[]>([] as any);
-  useEffect(()=>{ setMissions(getGuildMissions() as any); }, []);
+  const [showModal, setShowModal] = useState(!isMember);
+  const [missions, setMissions] = useState<any[]>([]);
+  const [active, setActive] = useState<string|null>(null);
+  const [loop, setLoop] = useState<Record<string,boolean>>({});
+  const staminaCost = 5;
 
-  const [tierFilter, setTierFilter] = useState<Tier|'ALL'>('ALL');
-  const visible = useMemo(()=> missions.filter(m=>{
-    const tierOK = tierFilter==='ALL' ? true : m.tier===tierFilter;
-    const gateOK = allowTier(playerTier, m.tier);
-    return tierOK && gateOK;
-  }), [missions, tierFilter, playerTier]);
+  useEffect(()=>{ // gerar missões do rank atual e vizinhos
+    const idx = Math.max(0, ORDER.indexOf(rank));
+    const pool: Rank[] = [ORDER[Math.max(0,idx-1)], ORDER[idx], ORDER[Math.min(ORDER.length-1,idx+1)]] as Rank[];
+    const ms = Array.from({length:9}).map((_,i)=>randomMission(pool[i%pool.length]));
+    setMissions(ms);
+  },[rank]);
 
-  // 1 missão ativa por vez
-  const [activeId, setActiveId] = useState<string|null>(null);
-  const [remainingMs, setRemainingMs] = useState<number>(0);
-  const activeRef = useRef<{ id:string, endsAt:number, duration:number }|null>(null);
-  const timerRef = useRef<any>(null);
-
-  useEffect(()=>()=>{ if(timerRef.current) clearInterval(timerRef.current); },[]);
-
-  function startMission(m:Mission){
-    if(!isMember){
-      const ok = registerInGuild?.();
-      if(!ok){ pushToast({title:'Cadastro necessário', message:'Você precisa pagar 1 prata para se registrar na Guilda.'}); return; }
-      pushToast({title:'Bem-vindo à Guilda!', message:'Cartão criado. Rank inicial: F.'});
+  function registerGuild(){
+    // cobrar 1 prata (100 cobre)
+    const silverToCopper = 100;
+    if(state.player.coins.silver<=0 && state.player.coins.copper < silverToCopper){
+      alert('Saldo insuficiente: precisa de 1 prata.');
+      return;
     }
-    if(activeId) return;
-    setActiveId(m.id);
-    const duration = m.durationMs;
-    const endsAt = Date.now() + duration;
-    activeRef.current = { id:m.id, endsAt, duration };
-    setRemainingMs(duration);
-    if(timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(()=>{
-      setRemainingMs(prev=>{
-        const next = Math.max(0, (activeRef.current?.endsAt||0) - Date.now());
-        if(next<=0){
-          clearInterval(timerRef.current);
-          completeMission(m);
-        }
-        return next;
-      });
-    }, 250);
+    // subtrai 1 prata preferindo prata; se não tiver, cobre suficiente
+    if(state.player.coins.silver>0){
+      giveCoins({ silver: -1 as any });
+    }else{
+      giveCoins({ copper: -silverToCopper as any });
+    }
+    ensureMemberCard();
+    setShowModal(false);
   }
 
-  function completeMission(m:Mission){
-    // Idempotência simples no lado do cliente: zera o run ao concluir
-    if(!activeRef.current || activeRef.current.id!==m.id) return;
-    activeRef.current = null;
-    setActiveId(null);
-    setRemainingMs(0);
-
-    // Aplicar recompensas 1x (XP, moedas, drops)
-    if(m.reward?.xp) giveXP?.(m.reward.xp);
-    if(m.reward?.coinsCopper) giveCoins?.({ copper: m.reward.coinsCopper });
-
-    // Drops com nome correto do catálogo
-    const anyCat:any = itemsCatalog;
-    const gained:any[] = [];
-    (m.reward?.drops||[]).forEach(d=>{
-      const it = anyCat[d.id];
-      const name = it?.name || 'Item desconhecido';
-      // inventário mínimo (compat)
-      setState((s:any)=>{
-        const inv = s?.player?.inventory ?? { items: [] };
-        const items = Array.isArray(inv.items) ? [...inv.items] : [];
-        const idx = items.findIndex((i:any)=> i?.id === d.id);
-        if(idx>=0){ items[idx] = { ...items[idx], qty:(items[idx].qty||0)+d.qty }; }
-        else { items.push({ id:d.id, name, icon:`/images/items/${d.id}.png`, qty:d.qty }); }
-        return { ...s, player:{ ...s.player, inventory:{ items } } };
-      });
-      gained.push(`${name} x${d.qty}`);
-    });
-
-    // Avançar o relógio do mundo
-    setState((s:any)=>{
-      const w = s.world || {};
-      const dateMs = (w.dateMs || Date.now()) + (m.durationMs||0);
-      return { ...s, world:{ ...w, dateMs } };
-    });
-
-    // Log
-    logGuildEvent?.({ at: Date.now(), missionId: m.id, tier: m.tier, gained: { xp:m.reward?.xp, copper:m.reward?.coinsCopper, drops:gained } });
-
-    // Toast com conversão
-    const c = copperToCoins(m.reward?.coinsCopper||0);
-    const dropsText = gained.length? gained.join(', ') : 'Nenhum';
-    pushToast?.({ title:'🏆 Missão concluída!', message:`+${m.reward?.xp||0} XP · ${c.gold}g ${c.silver}s ${c.bronze}b ${c.copper}c · Drops: ${dropsText}` });
-
-    try{ g.saveCurrentSlot?.(); }catch{}
+  function startMission(m:any){
+    if(active) return;
+    if(!spendStamina(staminaCost)){ alert('Stamina insuficiente. Descanse na taverna!'); return; }
+    setActive(m.id);
+    setTimeout(()=>finishMission(m), m.duration);
+  }
+  function finishMission(m:any){
+    completeGuildMission(m.rank);
+    if(m.rewards?.copper) giveCoins({copper: m.rewards.copper});
+    setActive(null);
+    // loop se ligado e ainda houver stamina
+    if(loop[m.id]){
+      setTimeout(()=>startMission(m), 200);
+    }
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-4">
-      {/* filtros */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button onClick={()=>setTierFilter('ALL')} className={`px-3 py-1.5 rounded-lg border ${tierFilter==='ALL'?'border-amber-400 text-amber-300':'border-slate-700 text-white/80'} bg-slate-900/50`}>Todas</button>
-        {ORDER.map(t=>(
-          <button key={t} onClick={()=>setTierFilter(t)} className={`px-3 py-1.5 rounded-lg border ${tierFilter===t?'border-amber-400 text-amber-300':'border-slate-700 text-white/80'} bg-slate-900/50`}>
-            Rank {t}
-          </button>
+    <div className="p-4 space-y-4">
+      {/* Modal de registro */}
+      {showModal && !isMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={()=>setShowModal(false)} />
+          <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} className="relative w-[min(620px,92vw)] rounded-2xl p-6 bg-amber-950/80 border border-amber-800/50 shadow-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <ScrollText className="w-6 h-6 text-amber-300"/>
+              <div className="text-lg font-semibold text-amber-100">Bem-vindo à Guilda dos Aventureiros</div>
+            </div>
+            <p className="text-sm text-amber-200/90 leading-relaxed">
+              Para se registrar, é necessário doar <b>1 prata</b>. Com o registro, você recebe seu <b>cartão oficial</b> e acesso aos contratos.
+              O caminho de ranks funciona assim: complete <b>10 missões de rank F</b> para subir a <b>E</b>, depois <b>20</b> para chegar a <b>D</b>, <b>40</b> para <b>C</b>… sempre dobrando.
+              Recompensas também melhoram a cada rank. Sem stamina? Visite a <b>taverna</b> para descansar. E se quiser otimizar, ative o <b>modo Loop</b> nas missões: seu aventureiro repete a tarefa até a stamina acabar.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={()=>setShowModal(false)} className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700">Cancelar</button>
+              <button onClick={registerGuild} className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 flex items-center gap-2"><Coins className="w-4 h-4"/> Registrar na Guilda — <span className="font-semibold">1 prata</span></button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Header da guilda com progresso de rank */}
+      <div className="p-4 rounded-xl bg-slate-900/60 border border-amber-900/40 shadow-md flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Shield className="w-6 h-6 text-amber-300"/>
+          <div>
+            <div className="font-semibold">Rank atual: <span className="text-amber-200">{rank}</span></div>
+            <div className="text-xs opacity-80">Progresso: {doneAtRank} / {needAtRank} missões</div>
+          </div>
+        </div>
+        <div className="w-64 h-2 bg-slate-700 rounded overflow-hidden">
+          <motion.div initial={{width:0}} animate={{width: `${Math.min(100, (doneAtRank/needAtRank)*100)}%`}} className="h-full bg-gradient-to-r from-amber-400 to-amber-600"/>
+        </div>
+      </div>
+
+      {/* Lista de missões */}
+      <div className="grid md:grid-cols-2 gap-3">
+        {missions.map(m=>(
+          <MissionCard key={m.id}
+            mission={m}
+            onAccept={()=>startMission(m)}
+            onLoopToggle={()=>setLoop(s=>({...s,[m.id]:!s[m.id]}))}
+            looping={!!loop[m.id]}
+            active={active===m.id}
+          />
         ))}
       </div>
 
-      {/* lista de missões (só [rank-1, rank, rank+1]) */}
-      <MissionList
-        missions={visible as any}
-        activeId={activeId}
-        remainingMs={remainingMs}
-        onAccept={startMission}
-      />
+      <MissionResultModal open={false} success onClose={()=>{}} />
     </div>
   );
 }

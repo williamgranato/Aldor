@@ -6,6 +6,19 @@ import { addPouch } from '@/utils/money_aldor_client';
 
 type Ctx = any;
 
+const RANKS: Rank[] = ['F','E','D','C','B','A','S','SS','SSS'] as any;
+
+function nextRank(r:Rank): Rank {
+  const i = RANKS.indexOf(r);
+  return (RANKS[Math.min(RANKS.length-1, i+1)] || r) as Rank;
+}
+function rankThreshold(rank: Rank): number {
+  // F->E = 10, E->D = 20, D->C = 40, doubling
+  const idx = Math.max(0, RANKS.indexOf(rank));
+  const stepsFromF = Math.max(0, idx - RANKS.indexOf('F'));
+  return 10 * Math.pow(2, stepsFromF);
+}
+
 const defaultState: GameState = {
   player: {
     id: 'player1',
@@ -17,13 +30,13 @@ const defaultState: GameState = {
     statPoints: 0,
     attributes: { strength:1, agility:1, intelligence:1, vitality:1, luck:0 },
     stats: { hp:30, maxHp:30, attack:5, defense:2, crit:0 },
-    stamina: { current:10, max:10, lastRefillDay: Date.now() },
+    stamina: { current:100, max:100, lastRefillDay: Date.now(), lastRegenAt: Date.now() as any },
     status: [],
     coins: { gold:0, silver:0, bronze:0, copper:0 },
     inventory: [],
     skills: {}
   },
-  guild: { isMember:false, completedQuests:[], activeQuests:[] },
+  guild: { isMember:false, completedQuests:[], activeQuests:[], memberCard: { name: 'Aventureiro', origin: 'Desconhecido', role:'guerreiro', rank: 'F' as Rank } },
   world: { dateMs: Date.now() },
   ui: { headerStyle: 'modern' }
 };
@@ -46,30 +59,31 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     dirtyRef.current = true;
     router.push('/create-character');
   }
-  function createCharacter(payload: { name:string; role:string; race:string; origin:string; attributes?: Partial<GameState['player']['attributes']> }){
+  function ensureMemberCard(){
     setState(prev=>{
-      const attrs = { ...prev.player.attributes, ...(payload.attributes||{}) };
-      const character = { id:'char1', name: payload.name, origin: payload.origin, role: payload.role, race: payload.race };
-      const player = { ...prev.player, character, attributes: attrs, level:1, xp:0, statPoints:0, coins:{ gold:0,silver:0,bronze:0,copper:0 }, inventory:[] };
-      return { ...prev, player };
+      if(prev.guild.isMember) return prev;
+      const rank: Rank = 'F' as Rank;
+      const card = { name: prev.player.character.name, origin: prev.player.character.origin, role: prev.player.character.role, rank };
+      return { ...prev, guild: { ...prev.guild, isMember: true, memberCard: card } };
     });
     markDirty();
-    router.push('/');
   }
 
-  // Load inicial
-  useEffect(()=>{ const l = loadSave(); if(l) setState(l as any); },[]);
+  // Derived stamina max from INT
+  function computeMaxStamina(intelligence:number){
+    return 100 + Math.max(0, Math.floor(intelligence))*3;
+  }
+  function recalcStaminaMax(){
+    setState(prev=>{
+      const max = computeMaxStamina(prev.player.attributes.intelligence||0);
+      const st = prev.player.stamina;
+      const current = Math.min(max, st.current);
+      return { ...prev, player: { ...prev.player, stamina: { ...st, max, current } } };
+    });
+    markDirty();
+  }
 
-  // Autosave loop
-  useEffect(()=>{
-    const id = setInterval(()=>{ if(dirtyRef.current) saveNow(state); }, 1000);
-    const flush = ()=>{ if(dirtyRef.current) saveNow(state); };
-    window.addEventListener('beforeunload', flush);
-    window.addEventListener('visibilitychange', flush);
-    return ()=>{ clearInterval(id); window.removeEventListener('beforeunload', flush); window.removeEventListener('visibilitychange', flush); };
-  },[state]);
-
-  // === Helpers de gameplay (mínimos, preservando contratos) ===
+  // === Gameplay helpers ===
   function giveXP(amount:number){
     if(!amount) return;
     setState(prev=>{
@@ -85,19 +99,30 @@ export function GameProvider({ children }:{children:React.ReactNode}){
   function giveCoins(p:Partial<CoinPouch>){
     if(!p) return;
     setState(prev=>{
+      // addPouch suporta negativos para subtrair
       const pouch = addPouch(prev.player.coins, p);
       return { ...prev, player: { ...prev.player, coins: pouch } };
     });
     markDirty();
   }
   function spendStamina(amount:number){
+    let success = false;
     setState(prev=>{
       const st = prev.player.stamina;
       if(st.current < amount) return prev;
+      success = true;
       return { ...prev, player:{ ...prev.player, stamina: { ...st, current: st.current - amount } } };
     });
+    if(success) markDirty();
+    return success;
+  }
+  function recoverStamina(amount:number){
+    setState(prev=>{
+      const st = prev.player.stamina;
+      const cur = Math.min(st.max, st.current + amount);
+      return { ...prev, player:{ ...prev.player, stamina: { ...st, current: cur } } };
+    });
     markDirty();
-    return true;
   }
   function changeHP(delta:number){
     setState(prev=>{
@@ -107,27 +132,60 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     });
     markDirty();
   }
-  function ensureMemberCard(){
-    setState(prev=>{
-      if(prev.guild.isMember) return prev;
-      const card = { name: prev.player.character.name, origin: prev.player.character.origin, role: prev.player.character.role, rank: 'F' as Rank };
-      return { ...prev, guild: { ...prev.guild, isMember: true, memberCard: card } };
-    });
-    markDirty();
-  }
-  function logGuildEvent(entry:any){
+
+  // Complete mission for guild: log + check rank progression
+  function completeGuildMission(rank: Rank){
     setState(prev=>{
       const cq = prev.guild.completedQuests ?? [];
-      return { ...prev, guild: { ...prev.guild, completedQuests: [...cq, { id: entry?.id || 'evt', rank: entry?.rank || 'F', at: Date.now() }] } };
+      const newCq = [...cq, { id: `m_${Date.now()}`, rank, at: Date.now() }];
+      // count completions at current rank of memberCard
+      const currentRank: Rank = (prev.guild.memberCard?.rank || 'F') as Rank;
+      const doneAtCurrent = newCq.filter(q=>q.rank===currentRank).length;
+      let memberCard = prev.guild.memberCard || { name: prev.player.character.name, origin: prev.player.character.origin, role: prev.player.character.role, rank: 'F' as Rank };
+      const threshold = rankThreshold(currentRank);
+      if(doneAtCurrent >= threshold){
+        memberCard = { ...memberCard, rank: (nextRank(currentRank) as Rank) };
+      }
+      return { ...prev, guild: { ...prev.guild, completedQuests: newCq, memberCard } };
     });
     markDirty();
   }
 
+  // Load inicial
+  useEffect(()=>{ const l = loadSave(); if(l) setState(l as any); },[]);
+
+  // Autosave + stamina regen
+  useEffect(()=>{
+    const id = setInterval(()=>{
+      if(dirtyRef.current) saveNow(state);
+      // stamina regen: +1 a cada 5s
+      setState(prev=>{
+        const now = Date.now();
+        const st:any = prev.player.stamina;
+        const last = st.lastRegenAt || now;
+        const delta = now - last;
+        if(delta < 5000) return prev;
+        const ticks = Math.floor(delta/5000);
+        const cur = Math.min(st.max, st.current + ticks);
+        return { ...prev, player: { ...prev.player, stamina: { ...st, current: cur, lastRegenAt: last + ticks*5000 } } };
+      });
+    }, 1000);
+    const flush = ()=>{ if(dirtyRef.current) saveNow(state); };
+    window.addEventListener('beforeunload', flush);
+    window.addEventListener('visibilitychange', flush);
+    return ()=>{ clearInterval(id); window.removeEventListener('beforeunload', flush); window.removeEventListener('visibilitychange', flush); };
+  },[state]);
+
+  // Recalc stamina max when INT changes
+  useEffect(()=>{
+    recalcStaminaMax();
+  }, [state.player.attributes.intelligence]);
+
   const ctx: Ctx = {
     state, setState,
-    giveXP, giveCoins, spendStamina, changeHP,
-    ensureMemberCard, logGuildEvent,
-    resetSave, createCharacter
+    giveXP, giveCoins, spendStamina, recoverStamina, changeHP,
+    ensureMemberCard, completeGuildMission,
+    resetSave
   };
 
   return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;
