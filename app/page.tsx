@@ -3,7 +3,7 @@ import React from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import Image from 'next/image';
 import PaperDoll from '@/components/PaperDoll';
-import { Heart, Shield, Sword, Crosshair, Zap, Brain, Star } from 'lucide-react';
+import { Heart, Shield, Sword, Crosshair, Zap, Brain, Star, Dumbbell, Sparkles } from 'lucide-react';
 
 const LABELS: Record<string,string> = {
   strength: 'Força',
@@ -47,11 +47,15 @@ function getEquipBonuses(equipment:any){
 }
 
 export default function Page(){
-  const { state, increaseAttribute, equip, unequip, useItem } = useGame();
+  const { state, increaseAttribute, equip, unequip, useItem,  resetSave } = useGame();
   const player = state.player;
 
   const attrs = Object.entries(player.attributes||{});
   const bonuses = getEquipBonuses(player.equipment || {});
+
+  const totalAtk = (player.attributes?.strength||0) + (bonuses.atk||0);
+  const totalDef = (player.attributes?.vitality||0) + (bonuses.defense||0);
+  const totalCrit = (player.attributes?.luck||0) + (bonuses.crit||0);
 
   // drag helpers
   const onDragStart = (it:any)=> (e:React.DragEvent)=>{
@@ -121,25 +125,59 @@ export default function Page(){
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 text-sm">
-                <span className="px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/30">🛡 Defesa: {bonuses.defense || 0}</span>
-                <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30">⚔ Ataque: {bonuses.atk || 0}</span>
-                <span className="px-3 py-1 rounded-full bg-yellow-500/15 border border-yellow-500/30">🎯 Crítico: {bonuses.crit || 0}%</span>
+                <span className="px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/30">🛡 Defesa: {totalDef}</span>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30">⚔ Ataque: {totalAtk}</span>
+                <span className="px-3 py-1 rounded-full bg-yellow-500/15 border border-yellow-500/30">🎯 Crítico: {totalCrit}%</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Equipamentos / PaperDoll */}
+      <div className="rounded-2xl p-6 bg-white/5 border border-white/10">
+        <h3 className="text-lg font-semibold mb-4">Equipamentos</h3>
+        <div className="hidden md:block">
+          <PaperDoll
+            equipment={player.equipment || {}}
+            onDropItem={handleDropOnSlot}
+            onUnequip={(slot)=> unequip(slot as any)}
+          />
+        </div>
+        <div className="mt-6 md:hidden">
+          <PaperDoll
+            equipment={player.equipment || {}}
+            onDropItem={handleDropOnSlot}
+            onUnequip={(slot)=> unequip(slot as any)}
+          />
+        </div>
+      </div>
+
       {/* Atributos */}
       <div className="rounded-2xl p-6 bg-white/5 border border-white/10">
         <h3 className="text-lg font-semibold mb-3">Atributos</h3>
+        <p className="text-xs opacity-80 mb-3">Distribua pontos para evoluir seu personagem.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {attrs.map(([key,val])=> (
-            <div key={key} className="flex items-center justify-between gap-2 text-sm">
-              <span className="capitalize">{LABELS[key] || key}: {val as any}</span>
+            <div key={key} className="flex items-center justify-between gap-3 text-sm rounded-lg px-3 py-2 bg-white/5 border border-white/10">
+              <span className="capitalize flex items-center gap-2">
+                {key==='strength' && <Dumbbell className="w-4 h-4 opacity-80" />}
+                {key==='agility' && <Zap className="w-4 h-4 opacity-80" />}
+                {key==='intelligence' && <Brain className="w-4 h-4 opacity-80" />}
+                {key==='vitality' && <Shield className="w-4 h-4 opacity-80" />}
+                {key==='luck' && <Star className="w-4 h-4 opacity-80" />}
+                {LABELS[key] || key}: {val as any}
+              </span>
               {player.statPoints>0 && (
                 <button
-                  className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs"
+                  className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs shadow-inner active:scale-95 transition"
+                  title={
+                    key==='strength'?'Aumenta ATK em +2':
+                    key==='vitality'?'Aumenta HP Máx em +10':
+                    key==='intelligence'?'Aumenta Stamina Máx em +3':
+                    key==='luck'?'Aumenta chance de crítico':
+                    key==='agility'?'Aumenta velocidade/AGI':''
+                  }
                   onClick={()=> increaseAttribute(key as any)}
                 >+</button>
               )}
@@ -201,24 +239,17 @@ export default function Page(){
         </div>
       </div>
 
-      {/* Equipamentos / PaperDoll */}
-      <div className="rounded-2xl p-6 bg-white/5 border border-white/10">
-        <h3 className="text-lg font-semibold mb-4">Equipamentos</h3>
-        <div className="hidden md:block">
-          <PaperDoll
-            equipment={player.equipment || {}}
-            onDropItem={handleDropOnSlot}
-            onUnequip={(slot)=> unequip(slot as any)}
-          />
-        </div>
-        <div className="mt-6 md:hidden">
-          <PaperDoll
-            equipment={player.equipment || {}}
-            onDropItem={handleDropOnSlot}
-            onUnequip={(slot)=> unequip(slot as any)}
-          />
-        </div>
-      </div>
-    </div>
+      
+    {/* Botão de deletar save */}
+<div className="rounded-2xl p-6 bg-red-900/30 border border-red-700/50 text-center">
+  <button
+    onClick={()=> resetSave()}
+    className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white font-semibold"
+  >
+    Deletar Save (Começar do zero)
+  </button>
+</div>
+
+</div>
   );
 }

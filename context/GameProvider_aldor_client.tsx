@@ -218,17 +218,45 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     }
   },[hydrated, state?.player?.character, pathname, router]);
 
+  function unequip(slot:any){
+  setState(prev=>{
+    const equipment = { ...(prev.player.equipment||{}) };
+    const current = equipment[slot];
+    if(!current) return prev;
+    const inv:any[] = Array.isArray(prev.player.inventory)
+      ? [...prev.player.inventory, current]
+      : [current];
+    const eq = { ...equipment, [slot]: null };
+    return { ...prev, player: { ...prev.player, inventory: inv, equipment: eq } };
+  });
+  markDirty();
+}
+
   const ctx: Ctx = {
     state, setState,
     giveXP, giveCoins, spendStamina, recoverStamina, changeHP,
     ensureMemberCard, completeGuildMission, addLootToInventory,
     resetSave
-  };
+  , unequip };
 
   return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;
 }
 
 export function useGame(){
+  function unequip(slot:any){
+  setState(prev=>{
+    const equipment = { ...(prev.player.equipment||{}) };
+    const current = equipment[slot];
+    if(!current) return prev;
+    const inv:any[] = Array.isArray(prev.player.inventory)
+      ? [...prev.player.inventory, current]
+      : [current];
+    const eq = { ...equipment, [slot]: null };
+    return { ...prev, player: { ...prev.player, inventory: inv, equipment: eq } };
+  });
+  markDirty();
+}
+
   const ctx = useContext(GameContext);
   if(!ctx) throw new Error('useGame must be used inside GameProvider');
   return ctx;
