@@ -1,76 +1,188 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Clock, Zap, Star, Coins, RefreshCw, Shield, Percent } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Swords, Hourglass, Zap, Coins as CoinsIcn, Star, Info } from 'lucide-react';
 
-function rarityRing(r?:string){
-  switch(r){
-    case 'incomum': return 'ring-emerald-400 text-emerald-400';
-    case 'raro': return 'ring-blue-400 text-blue-400';
-    case 'épico': return 'ring-violet-400 text-violet-400';
-    case 'lendário': return 'ring-orange-400 text-orange-400';
-    case 'mítico': return 'ring-amber-400 text-amber-400';
-    default: return 'ring-gray-400 text-gray-400';
+type MissionCardProps = {
+  mission: any;
+  onComplete?: () => void;          // chamado quando termina a missão (3s)
+  onLoopChange?: (active: boolean) => void;
+  canStart?: () => boolean;         // consulta stamina antes de iniciar/loopar
+  successChance?: (mission:any) => number; // função fornecida pela page
+};
+
+const rankColor = (r:string)=>{
+  switch((r||'').toUpperCase()){
+    case 'F': return 'bg-gray-500';
+    case 'E': return 'bg-emerald-500';
+    case 'D': return 'bg-sky-500';
+    case 'C': return 'bg-violet-500';
+    case 'B': return 'bg-orange-500';
+    case 'A': return 'bg-rose-500';
+    case 'S': return 'bg-amber-500';
+    default: return 'bg-gray-500';
   }
-}
+};
 
-export default function MissionCard({
-  mission, onAccept, onLoopToggle, looping, active, disabled, winChance
-}:{
-  mission:any;
-  onAccept:()=>void;
-  onLoopToggle:()=>void;
-  looping:boolean;
-  active:boolean;
-  disabled?:boolean;
-  winChance?:number;
-}){
-  const tier   = mission.requiredRank ?? mission.rank ?? 'F';
-  const xp     = mission.rewards?.xp ?? 0;
-  const copper = mission.rewards?.coinsCopper ?? mission.rewards?.copper ?? 0;
+const coinIcon = (k:string)=>{
+  const key = k.toLowerCase();
+  // caminhos conforme pedido: /image/copper.png | bronze.png | silver.png | gold.png
+  if(key.includes('gold')) return '/image/gold.png';
+  if(key.includes('silver')) return '/image/silver.png';
+  if(key.includes('bronze')) return '/image/bronze.png';
+  if(key.includes('copper') || key.includes('cooper')) return '/image/cooper.png';
+  return '/image/coin.png';
+};
+
+export default function MissionCard({ mission, onComplete, onLoopChange, canStart, successChance }: MissionCardProps){
+  const [progress,setProgress] = useState(0);
+  const [countdown,setCountdown] = useState(3);
+  const [looping,setLooping] = useState(false);
+  const [active,setActive] = useState(false);
+  const timerRef = useRef<any>(null);
+  const tickRef = useRef<any>(null);
+  const DURATION = 3000;
+
+  const startRun = ()=>{
+    if(canStart && !canStart()) {
+      // sem stamina
+      return;
+    }
+    setActive(true);
+    setProgress(0);
+    setCountdown(3);
+    // contador visual sincronizado
+    const start = Date.now();
+    tickRef.current = setInterval(()=>{
+      const elapsed = Date.now() - start;
+      const left = Math.max(0, DURATION - elapsed);
+      setCountdown(Math.ceil(left/1000));
+    },100);
+    // finalização exata
+    timerRef.current = setTimeout(()=>{
+      setActive(false);
+      setProgress(0);
+      clearInterval(tickRef.current);
+      onComplete && onComplete();
+      if(looping){
+        // tenta iniciar novo ciclo
+        startRun();
+      }
+    }, DURATION);
+  };
+
+  useEffect(()=>{
+    return ()=>{
+      if(timerRef.current) clearTimeout(timerRef.current);
+      if(tickRef.current) clearInterval(tickRef.current);
+    };
+  },[]);
+
+  const toggleLoop = ()=>{
+    const nv = !looping;
+    setLooping(nv);
+    onLoopChange && onLoopChange(nv);
+    if(nv && !active){
+      startRun(); // inicia imediatamente se ativar loop
+    }
+  };
+
+  const coins = mission?.rewards?.coins || null;
+  const chance = successChance ? successChance(mission) : undefined;
 
   return (
-    <motion.div whileHover={{scale: disabled?1:1.02}} className={"p-4 rounded-xl border shadow-md " + (disabled?'bg-slate-900/30 border-slate-800 opacity-70':'bg-slate-900/60 border-amber-900/40')}>
-      <div className="flex justify-between items-start gap-3">
-        <div className="flex-1">
-          <div className="font-semibold">
-            {mission.title}
-            <span className="ml-2 text-xs px-2 py-0.5 rounded bg-amber-800/40 border border-amber-700/40">Rank {tier}</span>
+    <motion.div 
+      initial={{ opacity:0, y:20 }}
+      animate={{ opacity:1, y:0 }}
+      transition={{ duration:0.35 }}
+      className={`space-y-3 rounded-2xl p-4 border border-white/10 shadow-lg bg-black/30 ${looping?'ring-2 ring-emerald-400':''}`}
+    >
+      {/* Header: Rank + Título */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="px-2 py-1 rounded bg-sky-600/30 border border-sky-400 flex items-center gap-1 text-sky-300 text-xs">
+            <Shield className="w-3 h-3"/> Rank {mission.rank}
           </div>
-          <div className="text-sm opacity-80 mt-0.5">{mission.desc}</div>
-          <div className="flex flex-wrap gap-3 text-xs mt-2 items-center">
-            <span className="inline-flex items-center gap-1"><Hourglass className="w-3 h-3"/>{Math.round(mission.duration/1000)}s</span>
-            <span className="inline-flex items-center gap-1"><Zap className="w-3 h-3"/>5 Stamina</span>
-            {xp? <span className="inline-flex items-center gap-1"><Star className="w-3 h-3"/>{xp} XP</span>:null}
-            {copper? <span className="inline-flex items-center gap-1"><CoinsIcn className="w-3 h-3"/>{copper}¢</span>:null}
-            {typeof winChance==='number'? <span className="inline-flex items-center gap-1"><Swords className="w-3 h-3"/>{winChance}%</span>:null}
-          </div>
-          {mission.possibleDrops?.length? (
-            <div className="mt-2 text-xs">
-              <div className="flex items-center gap-1 text-neutral-300 mb-1"><Info className="w-3 h-3"/><span>Possíveis drops</span></div>
-              <div className="flex flex-wrap gap-2">
-                {mission.possibleDrops.map((d:any)=>(
-                  <span key={d.id} className="inline-flex items-center gap-1">
-                    <span className={"inline-flex items-center justify-center h-7 w-7 rounded ring-2 " + rarityRing(d.rarity)} title={`${d.name} — ${d.rarity||'comum'}`}>
-                      <img src={d.icon} className="h-5 w-5 object-contain" alt={d.name}/>
-                    </span>
-                    <span className="truncate max-w-[110px]">{d.name} x{d.qty} ({Math.round(d.chance*100)}%)</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ):null}
+          <h4 className="text-base font-semibold">{mission.name}</h4>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={onLoopToggle} className={"px-3 py-1 rounded-lg border text-sm flex items-center gap-1 " + (looping?'bg-amber-700/60 border-amber-600':'bg-slate-800 hover:bg-slate-700 border-slate-700')}>
-            Loop
-          </button>
-          <button onClick={onAccept} disabled={active} className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-sm flex items-center gap-1 disabled:opacity-60">
-            <Swords className="w-3 h-3"/>{active?'Em andamento':'Aceitar'}
-          </button>
-        </div>
+        <motion.button
+          onClick={toggleLoop}
+          whileHover={{ scale:1.05 }}
+          whileTap={{ scale:0.95 }}
+          className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 ${looping?'bg-emerald-600':'bg-gray-700 hover:bg-gray-600'}`}
+        >
+          <RefreshCw className="w-3 h-3"/> Loop
+        </motion.button>
       </div>
-      {active? <motion.div initial={{width:0}} animate={{width:'100%'}} transition={{duration: mission.duration/1000, ease:'linear'}} className="mt-2 h-2 bg-amber-500 rounded-full"/>:null}
+
+      {/* Descrição */}
+      <p className="text-sm opacity-80">{mission.description}</p>
+
+      {/* Linha de metadados */}
+      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-300">
+        <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> 3s</span>
+        <span className="flex items-center gap-1"><Zap className="w-3 h-3"/> {(mission.cost||5)} Stamina</span>
+        <span className="flex items-center gap-1"><Star className="w-3 h-3"/> {mission.rewards?.xp || 0} XP</span>
+        {typeof chance === 'number' && (
+          <span className="flex items-center gap-1"><Percent className="w-3 h-3"/> {chance.toFixed(1)}%</span>
+        )}
+      </div>
+
+      {/* Recompensas em moedas */}
+      {coins && (
+        <div className="text-xs flex items-center gap-3 flex-wrap">
+          <div className="opacity-70">Moedas:</div>
+          {Object.entries(coins).map(([k,v]:any)=> (
+            <div key={k} className="flex items-center gap-1">
+              <img src={coinIcon(k)} alt={k} className="w-4 h-4"/>
+              <span className="capitalize">{k}</span>
+              <span className="font-semibold">{v}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Drops com chance */}
+      {mission.drops && mission.drops.length>0 && (
+        <div className="text-xs">
+          <div className="opacity-70">Possíveis drops:</div>
+          <div className="flex flex-wrap gap-3 mt-1">
+            {mission.drops.map((d:any,idx:number)=>(
+              <div key={idx} className="flex items-center gap-1">
+                {d.image && <img src={d.image.startsWith('/images')?d.image:'/images/items/'+d.image} alt={d.name} className="w-4 h-4"/>}
+                <span>{d.name} ({d.chance || '??'}%)</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Barra de progresso com contador central */}
+      {active && (
+        <div className="relative w-full h-3 bg-black/40 rounded overflow-hidden">
+          <motion.div 
+            key={String(active)} 
+            initial={{ width: 0 }}
+            animate={{ width: '100%' }}
+            transition={{ duration: 3, ease: 'linear' }}
+            className={`h-3 ${rankColor(mission.rank)}`}
+          />
+          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white/90">
+            {countdown}s
+          </div>
+        </div>
+      )}
+
+      {/* Botão iniciar */}
+      <motion.button
+        onClick={startRun}
+        disabled={active || (canStart && !canStart())}
+        whileHover={{ scale:1.05 }}
+        whileTap={{ scale:0.95 }}
+        className="mt-1 px-3 py-1 rounded-lg bg-orange-600 hover:bg-orange-500 text-sm font-semibold disabled:opacity-50"
+      >
+        Aceitar Missão
+      </motion.button>
     </motion.div>
   );
 }

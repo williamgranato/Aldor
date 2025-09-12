@@ -1,173 +1,182 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Shield, ScrollText, Award, Landmark } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ScrollText, Award, Landmark, Users, Star, Zap, Shield, CheckCircle2, XCircle } from 'lucide-react';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import MissionCard from '@/components/guild/MissionCard';
 import { getGuildMissions } from '@/data/missoes';
-import { rollLootForRank } from '@/utils/loot';
 import { useToasts } from '@/components/ToastProvider';
 
 type Rank = 'F'|'E'|'D'|'C'|'B'|'A'|'S'|'SS'|'SSS';
 
-function rarityClass(r?:string){
-  switch(r){
-    case 'incomum': return 'ring-emerald-400 text-emerald-400';
-    case 'raro': return 'ring-blue-400 text-blue-400';
-    case 'épico': return 'ring-violet-400 text-violet-400';
-    case 'lendário': return 'ring-orange-400 text-orange-400';
-    case 'mítico': return 'ring-amber-400 text-amber-400';
-    default: return 'ring-gray-400 text-gray-400';
-  }
-}
+const REPUTATION_TITLES = [
+  'Forasteiro','Conhecido','Aliado','Companheiro','Protetor da Vila',
+  'Campeão Regional','Herói Local','Defensor de Aldoria','Lenda Viva','Símbolo Eterno'
+];
 
 export default function GuildPage(){
-  const { state, giveCoins, giveXP, spendStamina, ensureMemberCard, completeGuildMission, addLootToInventory } = useGame();
+  const { state, spendStamina, giveXP, giveCoins, completeGuildMission, addLootToInventory, ensureMemberCard } = useGame();
   const { add } = useToasts();
-  const isMember = !!state.guild?.isMember;
+  const [missions,setMissions] = useState<any[]>([]);
+  const [rankFilter,setRankFilter] = useState<string>('Todos');
+
   const rank: Rank = (state.guild?.memberCard?.rank || 'F') as Rank;
-  const staminaCost = 5;
-  const [active,setActive] = useState<string|null>(null);
-  const [loop,setLoop] = useState<Record<string,boolean>>({});
-  const [winMap,setWinMap] = useState<Record<string,number>>({});
-  const [filter,setFilter] = useState<Rank>(rank);
-
-  useEffect(()=>{ if(isMember) ensureMemberCard(); },[isMember]);
-
-  const missions = useMemo(()=>getGuildMissions(filter), [filter]);
-
-  function estimateWinChance(m:any): number {
-    const tier = (m.requiredRank || m.rank || 'F') as Rank;
-    const attrs = state.player?.attributes || {};
-    const stats = state.player?.stats || {};
-    const power = (attrs.strength||0)*2 + (attrs.intelligence||0)*1.5 + (attrs.vitality||0)*2 + (attrs.agility||0) + (stats.attack||0) + (stats.defense||0)*0.8 + (stats.hp||0)/10;
-    const tierReq = {F:10,E:20,D:35,C:50,B:70,A:95,S:130,SS:170,SSS:220}[tier] || 10;
-    return Math.round(Math.max(5, Math.min(95, 50 + (power - tierReq))));
-  }
+  const isMember = !!state.guild?.isMember;
 
   useEffect(()=>{
-    const map: Record<string,number> = {};
-    for(const m of missions){ map[m.id] = estimateWinChance(m); }
-    setWinMap(map);
-  }, [missions, state.player?.attributes, state.player?.stats]);
+    setMissions(getGuildMissions(rank));
+  },[rank]);
 
-  function startMission(m:any){
-    if(active || !isMember) return;
-    const ok = spendStamina(staminaCost);
-    if(!ok){ add({ type:'warning', message:'Stamina insuficiente. Descanse na taverna!', ttl:3000 }); return; }
-    setActive(m.id);
-    setTimeout(()=>finishMission(m), m.duration);
-  }
+  const reputationTitle = ()=>{
+    const rep = state.guild?.reputation || 0;
+    const step = Math.min(REPUTATION_TITLES.length-1, Math.floor(rep/100));
+    return REPUTATION_TITLES[step];
+  };
 
-  function finishMission(m:any){
-    const winChance = winMap[m.id] ?? estimateWinChance(m);
-    const won = Math.random()*100 < winChance;
-    setActive(null);
-    if(won){
-      const copper = m.rewards?.coinsCopper||m.rewards?.copper||0;
-      const xp = m.rewards?.xp||0;
-      const drops = rollLootForRank(rank);
-      if(copper) giveCoins({copper});
-      if(xp) giveXP(xp);
-      if(drops?.length) addLootToInventory(drops);
-      completeGuildMission(rank, { xp, copper, drops, title: m.title });
-      add({ title:'Missão concluída', message:`${m.title}: +${xp} XP, +${copper}¢`, type:'success', ttl:3600 });
-    } else {
-      add({ title:'Missão falhou', message:`${m.title}: inimigos foram mais fortes.`, type:'error', ttl:3000 });
+  // chance de sucesso baseada nos atributos
+  const successChance = (mission:any)=>{
+    const stats = state.player.stats || {};
+    const atk = stats.atk || 0;
+    const def = stats.defense || 0;
+    const hp = stats.maxHp || 0;
+    const shield = stats.shield || 0;
+    const df = mission.difficulty || 10;
+    let chanceBase = 50 + ((atk*0.4 + def*0.3 + (hp/10)*0.2 + shield*0.1) - df);
+    // Afinidade: se o provider tiver histórico por missão, poderemos ler aqui; por ora sem afinidade adicional
+    let chanceFinal = Math.max(5, Math.min(100, chanceBase));
+    return chanceFinal;
+  };
+
+  const handleMission = (mission:any)=>{
+    const cost = mission.cost || 5;
+    if(state.player.stamina.current < cost){
+      add({ type:'error', title:'Sem Stamina', message:'Você não tem stamina suficiente!' });
+      return;
     }
-    if(loop[m.id]) setTimeout(()=>startMission(m), 200);
-  }
 
-  if(!isMember){
-    return (
-      <div className="p-6 text-center text-neutral-300">
-        <Shield className="w-10 h-10 mx-auto text-amber-400 mb-2"/>
-        <p>Você ainda não faz parte da Guilda.</p>
-        <p className="text-sm text-neutral-400">Vá até o registro da guilda para se tornar um aventureiro rank F.</p>
-      </div>
-    );
-  }
+    // rola sucesso
+    const roll = Math.random()*100;
+    const chance = successChance(mission);
+    let success = roll <= chance;
 
-  const rankOrder: Rank[] = ['F','E','D','C','B','A','S','SS','SSS'];
+    // stamina sempre consumida quando a missão é executada
+    spendStamina(cost);
 
-  function rankIntro(r: Rank){
-    const map: Record<Rank,string> = {
-      F:'O salão cheira a pergaminho novo e couro molhado. Novatos sussurram contratos, olhos brilhando de expectativa.',
-      E:'Você reconhece rostos: veteranos de F trotando para E, rumores de bandidos e lobos rondam o quadro de missões.',
-      D:'As paredes exibem troféus discretos. O escriba anota teu nome com respeito contido.',
-      C:'O brasão da guilda parece mais pesado aqui. Mensageiros correm, e missões falam em necromantes e golems.',
-      B:'Capas encharcadas secam penduradas. O murmúrio é de basiliscos, mares e faróis sem luz.',
-      A:'Os atendentes te cumprimentam pelo nome. Falam mais baixo quando você passa.',
-      S:'A sala parece maior. Ou você ficou. Cataclismos começam a soar como tarefas possíveis.',
-      SS:'Velhos mestres te observam com um quase sorriso. A guilda é teu segundo coração.',
-      SSS:'O brasão reverencia de volta. A fronteira entre lenda e rotina ficou tímida.',
-    };
-    return map[r] || map.F;
-  }
+    let coinsGained:any = {};
+    let lootGained:any[] = [];
+    let xpGained = 0;
+
+    if(success){
+      xpGained = mission.rewards?.xp || 0;
+      if(xpGained) giveXP(xpGained);
+
+      if(mission.rewards?.coins){
+        giveCoins(mission.rewards.coins);
+        coinsGained = mission.rewards.coins;
+      }
+
+      if(mission.drops){
+        mission.drops.forEach((d:any)=>{
+          const dropRoll = Math.random()*100;
+          if(dropRoll <= (d.chance||50)){
+            addLootToInventory(d);
+            lootGained.push(d);
+          }
+        });
+      }
+
+      completeGuildMission(mission);
+    }
+
+    // toast
+    const lootText = lootGained.length? (' | Loot: '+lootGained.map(l=>l.name).join(', ')) : '';
+    add({
+      type: success? 'success':'error',
+      title: success? `Missão concluída` : `Missão falhou`,
+      message: `${mission.name} • Chance ${chance.toFixed(1)}% • XP ${xpGained}${Object.keys(coinsGained).length? ' • Coins '+JSON.stringify(coinsGained):''}${lootText}`
+    });
+  };
+
+  const filtered = rankFilter==='Todos'? missions : missions.filter(m=> m.rank===rankFilter);
+  const completed = state.guild?.completedQuests?.length || 0;
 
   return (
-    <div className="p-4 space-y-6">
-      <div className="rounded-2xl border border-amber-900/40 bg-gradient-to-r from-amber-900/30 to-slate-900/40 p-4 shadow-lg">
-        <div className="flex items-center gap-3 text-amber-300">
-          <Landmark className="w-6 h-6"/>
-          <h2 className="font-semibold text-lg">Guilda dos Aventureiros — Rank {rank}</h2>
-        </div>
-        <p className="mt-1 text-sm text-neutral-300">{rankIntro(rank)}</p>
+    <div className="p-6 space-y-6 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900 min-h-screen text-white">
+      {/* Introdução */}
+      <div className="rounded-2xl p-6 bg-white/5 backdrop-blur-sm border border-white/10 shadow-lg">
+        <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+          <Users className="w-6 h-6 text-emerald-400"/> Guilda de Aventureiros
+        </h2>
+        <p className="opacity-70 text-sm">Local onde heróis se unem para enfrentar desafios, ganhar recompensas e aumentar sua reputação.</p>
+        {!isMember && (
+          <button onClick={ensureMemberCard} className="mt-4 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold">
+            Tornar-se Membro
+          </button>
+        )}
       </div>
 
-      <div className="mb-2">
-        <label className="mr-2 text-sm text-neutral-300">Filtrar por Rank:</label>
-        <select value={filter} onChange={(e)=>setFilter(e.target.value as Rank)} className="bg-slate-900/70 border border-slate-700 rounded px-2 py-1 text-sm">
-          {rankOrder.slice(0, rankOrder.indexOf(rank)+1).map((r)=>(<option key={r} value={r}>{r}</option>))}
-        </select>
+      {/* Status */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="rounded-xl p-4 bg-sky-500/20 border border-sky-500/30 flex flex-col gap-1">
+          <div className="flex items-center gap-1 text-sm opacity-80"><Shield className="w-4 h-4"/> Rank Atual</div>
+          <div className="font-bold">Rank {rank}</div>
+        </div>
+        <div className="rounded-xl p-4 bg-emerald-500/20 border border-emerald-500/30 flex flex-col gap-1">
+          <div className="flex items-center gap-1 text-sm opacity-80"><ScrollText className="w-4 h-4"/> Missões completas</div>
+          <div className="font-bold">{completed}</div>
+        </div>
+        <div className="rounded-xl p-4 bg-amber-500/20 border border-amber-500/30 flex flex-col gap-1">
+          <div className="flex items-center gap-1 text-sm opacity-80"><Star className="w-4 h-4"/> Reputação</div>
+          <div className="font-bold">{reputationTitle()}</div>
+        </div>
+        <div className="rounded-xl p-4 bg-red-500/20 border border-red-500/30 flex flex-col gap-1">
+          <div className="flex items-center gap-1 text-sm opacity-80"><Zap className="w-4 h-4"/> Stamina</div>
+          <div className="font-bold">{state.player.stamina.current ?? 0}/{state.player.stamina.max ?? 0}</div>
+        </div>
       </div>
 
-      <div className="rounded-xl border border-slate-700 bg-slate-900/50 p-3 shadow-md">
-        <div className="flex items-center gap-2 text-amber-300 mb-2">
-          <ScrollText className="w-5 h-5"/><h3 className="font-semibold">Quadro de Missões</h3>
-        </div>
-        <p className="text-xs text-neutral-400 mb-3">Os contratos pregados no quadro chamam sua atenção. Escolha seu próximo feito.</p>
-        <div className="grid gap-3 md:grid-cols-2">
-          {missions.map((m:any)=>(
-            <MissionCard key={m.id} mission={m} active={active===m.id}
-              onAccept={()=>startMission(m)}
-              onLoopToggle={()=>setLoop((l)=>({...l,[m.id]:!l[m.id]}))}
-              looping={!!loop[m.id]}
-              winChance={winMap[m.id]}
+      {/* Filtros */}
+      <div className="flex gap-2 flex-wrap">
+        {['Todos','F','E','D','C','B','A','S'].map(r=>(
+          <button key={r} onClick={()=>setRankFilter(r)}
+            className={`px-3 py-1 rounded ${rankFilter===r?'bg-emerald-600':'bg-gray-700 hover:bg-gray-600'}`}>
+            {r}
+          </button>
+        ))}
+      </div>
+
+      {/* Missões */}
+      <div className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <ScrollText className="w-5 h-5 text-emerald-400"/> Missões
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filtered.map((m,i)=>(
+            <MissionCard 
+              key={i} 
+              mission={m} 
+              onComplete={()=>handleMission(m)} 
+              canStart={()=> (state.player.stamina.current ?? 0) >= (m.cost || 5)}
+              successChance={successChance}
             />
           ))}
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-700 bg-slate-900/50 p-3 shadow-md">
-        <div className="flex items-center gap-2 text-amber-300 mb-2">
-          <Award className="w-5 h-5"/><h3 className="font-semibold">Livro de Registros da Guilda</h3>
-        </div>
-        <div className="space-y-2">
-          {(state.guild?.completedQuests||[]).slice(0,15).map((q:any)=>(
-            <div key={q.id} className="text-sm p-2 rounded bg-neutral-800/60 border border-neutral-700 drop-shadow">
-              <div className="flex justify-between mb-1">
-                <div className="font-medium">{q.title}</div>
-                <div className="text-neutral-400 text-xs">{new Date(q.at).toLocaleTimeString()}</div>
-              </div>
-              <div className="text-xs flex items-center gap-3 flex-wrap">
-                <span>Recebeu <b>{q.xp||0}</b> XP</span>
-                <span className="inline-flex items-center gap-1"><img src="/images/items/copper.png" className="h-4 w-4" alt="cobre"/> {q.copper||0}¢</span>
-                {q.drops?.length ? (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span>e coletou:</span>
-                    {q.drops.map((d:any)=>(
-                      <div key={d.id} className="inline-flex items-center gap-1">
-                        <span className={"inline-flex items-center justify-center h-6 w-6 rounded ring-2 " + rarityClass(d.rarity)} title={(d.name||'Item') + ' — ' + (d.rarity||'comum')}>
-                          <img src={d.icon||d.image||'/images/items/unknown.png'} className="h-4 w-4 object-contain" alt={d.name||'item'}/>
-                        </span>
-                        <span className="max-w-[140px] truncate">{d.name||'Item desconhecido'}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
+      {/* Histórico */}
+      <div className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Award className="w-5 h-5 text-yellow-400"/> Histórico
+        </h3>
+        <div className="space-y-2 text-sm">
+          {(state.guild?.log||[]).map((entry:any,idx:number)=>(
+            <div key={idx} className="p-2 rounded bg-black/30 border border-white/10 flex items-center gap-2">
+              {String(entry).toLowerCase().includes('falhou') ? <XCircle className="w-4 h-4 text-red-400"/> : <CheckCircle2 className="w-4 h-4 text-emerald-400"/>}
+              {entry}
             </div>
           ))}
+          {(!state.guild?.log || state.guild?.log.length===0) && (
+            <div className="text-gray-400">Nenhum registro ainda.</div>
+          )}
         </div>
       </div>
     </div>

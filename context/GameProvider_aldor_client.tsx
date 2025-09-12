@@ -40,6 +40,56 @@ const defaultState: GameState = {
 const GameContext = createContext<Ctx|null>(null);
 
 export function GameProvider({ children }:{children:React.ReactNode}){
+function increaseAttribute(key:any){
+  setState(prev=>{
+    const pts = prev.player.statPoints || 0;
+    if(pts <= 0) return prev;
+    const attrs:any = { ...prev.player.attributes };
+    attrs[key] = (attrs[key] || 0) + 1;
+    let stats = { ...prev.player.stats };
+    let stamina = { ...prev.player.stamina };
+    if(key === 'vitality'){
+      stats.maxHp += 10;
+      stats.hp = Math.min(stats.maxHp, stats.hp + 10);
+    }
+    if(key === 'intelligence'){
+      stamina.max += 3;
+      stamina.current = Math.min(stamina.max, stamina.current + 3);
+    }
+    return {
+      ...prev,
+      player: { ...prev.player, attributes: attrs, statPoints: pts - 1, stats, stamina }
+    };
+  });
+  markDirty();
+}
+
+function useItem(item:any){
+  if(!item) return;
+  setState(prev=>{
+    const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory] : [];
+    const idx = inv.findIndex(i=> i.id === item.id);
+    if(idx === -1) return prev;
+    const newInv = [...inv];
+    const existing = newInv[idx];
+    if(existing?.qty && existing.qty > 1){ newInv[idx] = { ...existing, qty: existing.qty - 1 }; }
+    else { newInv.splice(idx,1); }
+    let newPlayer = { ...prev.player, inventory: newInv };
+    if(item.hp){
+      const st = newPlayer.stats;
+      const hp = Math.min(st.maxHp, st.hp + (item.hp||0));
+      newPlayer = { ...newPlayer, stats: { ...st, hp } };
+    }
+    if(item.stamina){
+      const st = newPlayer.stamina;
+      const current = Math.min(st.max, st.current + (item.stamina||0));
+      newPlayer = { ...newPlayer, stamina: { ...st, current } };
+    }
+    return { ...prev, player: newPlayer };
+  });
+  markDirty();
+}
+
   const router = useRouter();
   const pathname = usePathname();
   const [state, setState] = useState<GameState>(defaultState);
@@ -237,7 +287,7 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     giveXP, giveCoins, spendStamina, recoverStamina, changeHP,
     ensureMemberCard, completeGuildMission, addLootToInventory,
     resetSave
-  , unequip };
+  , unequip , increaseAttribute , useItem };
 
   return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;
 }
@@ -264,28 +314,3 @@ export function useGame(){
 
 
 // added by patch: useItem (consume consumables)
-function useItem(item:any){
-  if(!item) return;
-  setState(prev=>{
-    const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory] : [];
-    const idx = inv.findIndex(i=> i.id === item.id);
-    if(idx === -1) return prev;
-    const newInv = [...inv];
-    const existing = newInv[idx];
-    if(existing?.qty && existing.qty > 1){ newInv[idx] = { ...existing, qty: existing.qty - 1 }; }
-    else { newInv.splice(idx,1); }
-    let newPlayer = { ...prev.player, inventory: newInv };
-    if(item.hp){
-      const st = newPlayer.stats;
-      const hp = Math.min(st.maxHp, st.hp + (item.hp||0));
-      newPlayer = { ...newPlayer, stats: { ...st, hp } };
-    }
-    if(item.stamina){
-      const st = newPlayer.stamina;
-      const current = Math.min(st.max, st.current + (item.stamina||0));
-      newPlayer = { ...newPlayer, stamina: { ...st, current } };
-    }
-    return { ...prev, player: newPlayer };
-  });
-  markDirty();
-}
