@@ -31,6 +31,7 @@ const defaultState: GameState & { reputation: ReputationEntry[] } = {
     status: [],
     coins: { gold:0, silver:0, bronze:0, copper:0 },
     inventory: [],
+    equipment: { cabeca:null, peito:null, mao_principal:null, mao_secundaria:null, pernas:null, botas:null, anel:null, amuleto:null },
     skills: {}
   },
   guild: { isMember:false, completedQuests:[], activeQuests:[], memberCard: undefined as any },
@@ -193,7 +194,36 @@ function increaseAttribute(attr: keyof typeof state.player.attributes){
   });
   markDirty();
 }
-  // === NOVAS FUNÇÕES DE MERCADO ===
+  
+// === EQUIPAMENTOS: equipar / desequipar ===
+function equip(slot: keyof typeof state.player.equipment, item: any){
+  if(!slot || !item) return;
+  setState(prev=>{
+    const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory] : [];
+    const idx = inv.findIndex(i=> i.id === item.id);
+    if(idx === -1) return prev;
+    const current = (prev.player.equipment as any)[slot] || null;
+    // remove from inventory
+    inv.splice(idx,1);
+    // if had equipped, return it to inventory
+    if(current){ inv.push(current); }
+    const equipment = { ...prev.player.equipment, [slot]: item };
+    return { ...prev, player: { ...prev.player, inventory: inv, equipment } };
+  });
+  markDirty();
+}
+
+function unequip(slot: keyof typeof state.player.equipment){
+  setState(prev=>{
+    const current = (prev.player.equipment as any)[slot] || null;
+    if(!current) return prev;
+    const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory, current] : [current];
+    const equipment = { ...prev.player.equipment, [slot]: null };
+    return { ...prev, player: { ...prev.player, inventory: inv, equipment } };
+  });
+  markDirty();
+}
+// === NOVAS FUNÇÕES DE MERCADO ===
   function comprar(item:any, priceCopper:number, merchantId:string){
     setState(prev=>{
       const pouch = { ...prev.player.coins, copper: (prev.player.coins.copper||0) - priceCopper };
@@ -267,7 +297,7 @@ function increaseAttribute(attr: keyof typeof state.player.attributes){
     giveXP, giveCoins, spendStamina, recoverStamina, changeHP,
     ensureMemberCard, completeGuildMission, addLootToInventory,
     resetSave,
-    comprar, reputationAdd, increaseAttribute
+    comprar, reputationAdd, increaseAttribute, equip, unequip
   };
 
   return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;
