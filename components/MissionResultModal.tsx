@@ -1,7 +1,16 @@
 // components/MissionResultModal.tsx
 'use client';
 import React from 'react';
+import * as itemsCatalog from '@/data/items_catalog';
 import { useGame } from '@/context/GameProvider_aldor_client';
+
+
+const anyItems:any = itemsCatalog as any;
+function findCatalogItem(id:string){
+  const arrays = [anyItems.ITEMS, anyItems.EXTRA_ITEMS, anyItems.GEMS];
+  for(const arr of arrays){ if(Array.isArray(arr)){ const it = arr.find((x:any)=> x.id===id); if(it) return it; } }
+  return anyItems[id];
+}
 
 export default function MissionResultModal(){
   const { state } = useGame();
@@ -34,7 +43,7 @@ export default function MissionResultModal(){
               <div className="flex flex-wrap gap-2">
                 {res.drops.map((d:any)=> (
                   <div key={d.id} className="px-2 py-1 text-xs rounded bg-black/30 border border-amber-900/40">
-                    {d.id} × {d.qty}
+                    {(findCatalogItem(d.id)?.name||d.id)} × {d.qty}
                   </div>
                 ))}
               </div>

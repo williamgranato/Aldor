@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { ShieldAlert, Clock } from 'lucide-react';
 import { copperToCoins } from '@/utils/money_aldor_client';
 import * as itemsCatalog from '@/data/items_catalog';
 
@@ -21,6 +22,9 @@ const TIER_COLORS: Record<Tier, string> = {
   SSS:'from-red-900 to-red-700',
 };
 
+const RISK_BY_TIER: Record<Tier, number> = { F:10, E:20, D:30, C:40, B:50, A:60, S:70, SS:80, SSS:90 };
+function riskForTier(t:Tier){ return RISK_BY_TIER[t] ?? 30; }
+
 export default function MissionCard({
   mission, disabled, active, progressPct, onAccept
 }:{ mission:Mission, disabled:boolean, active:boolean, progressPct:number, onAccept:()=>void }){
@@ -35,7 +39,13 @@ export default function MissionCard({
         <div className="text-sm opacity-90">{mission.desc}</div>
       </div>
       <div className="p-4 space-y-3">
-        <div className="text-xs text-white/70">Duração: {Math.ceil(mission.durationMs/1000)}s</div>
+        <div className="flex items-center justify-between text-xs text-white/70">
+          <div className="inline-flex items-center gap-1"><Clock className="w-4 h-4" /> Duração: {Math.ceil(mission.durationMs/1000)}s</div>
+          <div className="inline-flex items-center gap-1"><ShieldAlert className="w-4 h-4" /> Risco: {riskForTier(mission.tier)}%</div>
+        </div>
+        <div className="mt-1 h-1 w-full rounded-full bg-slate-800/80" data-risk>
+          <div className="h-1 rounded-full bg-gradient-to-r from-amber-600/80 to-red-600/80" style={{width: riskForTier(mission.tier)+'%'}} />
+        </div>
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <span className="rounded-md bg-amber-500/10 px-2 py-0.5 border border-amber-500/30">+{mission.reward.xp} XP</span>

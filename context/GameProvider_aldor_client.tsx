@@ -156,7 +156,32 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
     scheduleSave();
   }
 
-  function logGuildEvent(entry:any){
+  
+
+  // Registers the player into the Guild, charging 1 silver (or equivalent in copper).
+  function registerInGuild(origin?: string): boolean {
+    let ok = false;
+    setState(prev => {
+      const player = prev.player || {} as any;
+      const pouch = player.coins || { gold:0, silver:0, bronze:0, copper:0 };
+      const after = subPouch(pouch, { silver: 1 });
+      // if not enough coins, do nothing
+      if (coinsToCopper(pouch) < 100) return prev;
+      ok = true;
+      const g = prev.guild ?? ({} as any);
+      const card = {
+        name: player?.character?.name ?? 'Aventureiro',
+        origin: origin ?? player?.character?.origin ?? 'Desconhecido',
+        role: player?.character?.roleKey ?? 'guerreiro',
+        createdAt: Date.now()
+      };
+      const newPlayer = { ...player, coins: after, adventurerRank: player?.adventurerRank ?? 'F' };
+      return { ...prev, player: newPlayer, guild: { ...g, isMember: true, memberCard: card } };
+    });
+    if (ok) scheduleSave();
+    return ok;
+  }
+function logGuildEvent(entry:any){
     setState(prev=>{
       const g = prev.guild ?? ({} as any);
       const logs = (g.logs ?? []) as any[];
@@ -257,6 +282,7 @@ export function GameProviderClient({ children }:{children:React.ReactNode}){
     spendStamina,
     changeHP,
     ensureMemberCard,
+    registerInGuild,
     logGuildEvent,
     item_equip,item_unequip,use_item,removeItem,equip,unequip
   };
