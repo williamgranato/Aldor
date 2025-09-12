@@ -32,7 +32,7 @@ const defaultState: GameState = {
     inventory: [],
     skills: {}
   },
-  guild: { isMember:false, completedQuests:[], activeQuests:[], memberCard: undefined as any },
+  guild: { isMember:false, completedQuests:[], activeQuests:[], missionAffinity:{}, memberCard: undefined as any },
   world: { dateMs: Date.now() },
   ui: { headerStyle: 'modern' }
 };
@@ -195,30 +195,74 @@ function useItem(item:any){
     markDirty();
   }
 
-  function addLootToInventory(drops: {id:string; name:string; icon?:string; rarity?:string}[]){
+  
+  function addLootToInventory(drops: {id:string; name:string; image?:string; icon?:string; rarity?:string; qty?:number}[]){
     if(!drops?.length) return;
     setState(prev=>{
-      const inv:any[] = (prev.player.inventory as any[]) || [];
-      const updated = [...inv, ...drops.map(d=>({ ...d, qty:1 }))];
-      return { ...prev, player: { ...prev.player, inventory: updated as any } };
+      const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory] : [];
+      const updated = [...inv];
+      drops.forEach(d=>{
+        const id = d.id;
+        const idx = updated.findIndex(x=>x.id===id);
+        if(idx>=0){
+          const cur = updated[idx];
+          updated[idx] = { ...cur, qty: (cur.qty||1) + (d.qty||1) };
+        } else {
+          updated.push({ ...d, qty: d.qty||1 });
+        }
+      });
+      return { ...prev, player: { ...prev.player, inventory: updated } };
     });
     markDirty();
   }
 
-  function completeGuildMission(rank: Rank, payload?: {xp?:number; copper?:number; drops?: any[]; title?:string}){
+  
+  function completeGuildMission(a:any, b?:any, c?:any){
+    // Supports: (rank, payload) legacy OR (mission, success, rewards)
     setState(prev=>{
-      const cq:any[] = (prev.guild.completedQuests as any[]) ?? [];
-      const entry:any = { id: `m_${Date.now()}`, rank, at: Date.now(), ...payload };
-      const newCq = [entry, ...cq].slice(0, 100);
-      const currentRank: Rank = (prev.guild.memberCard?.rank || 'F') as Rank;
-      const doneAtCurrent = newCq.filter(q=>q.rank===currentRank).length;
-      let memberCard = prev.guild.memberCard || { name: prev.player.character.name, origin: prev.player.character.origin, role: prev.player.character.role, rank: 'F' as Rank };
-      const idx = RANKS.indexOf(currentRank);
-      const threshold = rankThreshold(currentRank);
-      if(doneAtCurrent >= threshold && idx>=0 && idx<RANKS.length-1){
-        memberCard = { ...memberCard, rank: (RANKS[idx+1] as Rank) };
+      let newState = { ...prev };
+      const cq:any[] = Array.isArray(prev.guild.completedQuests) ? [...prev.guild.completedQuests] : [];
+
+      let entry:any = { id: `m_${Date.now()}`, at: Date.now() };
+
+      if(typeof a === 'string'){ // legacy: (rank, payload)
+        const rank = a as any;
+        const payload = b || {};
+        entry = { ...entry, rank, ...payload, success: (payload?.success ?? true) };
+      } else if(a && typeof a === 'object'){ // new: (mission, success, rewards)
+        const mission = a;
+        const success = !!b;
+        const rewards = c || {};
+        entry = { ...entry, mission, rank: mission.rank, success, rewards };
+        // track affinity on success
+        if(success){
+          const mid = mission.id;
+          const aff = { ...(prev.guild.missionAffinity||{}) };
+          aff[mid] = (aff[mid]||0) + 1;
+          newState.guild = { ...(newState.guild||{}), missionAffinity: aff };
+        }
       }
-      return { ...prev, guild: { ...prev.guild, completedQuests: newCq, memberCard, isMember: true } };
+
+      const newCq = [entry, ...cq].slice(0, 200);
+
+      // Rank up logic based on successful completions at current rank
+      const currentRank = (newState.guild.memberCard?.rank || 'F') as any;
+      const doneAtCurrent = newCq.filter(q=> (q.success!==false) && (q.rank===currentRank)).length;
+
+      const RANKS: any[] = ['F','E','D','C','B','A','S','SS','SSS'];
+      function threshold(r:any){
+        const idx = Math.max(0, RANKS.indexOf(r));
+        const steps = Math.max(0, idx - RANKS.indexOf('F'));
+        return 10 * Math.pow(2, steps);
+      }
+      let memberCard = newState.guild.memberCard || { name: prev.player.character.name, origin: prev.player.character.origin, role: prev.player.character.role, rank: 'F' as any };
+      const idx = RANKS.indexOf(currentRank);
+      if(doneAtCurrent >= threshold(currentRank) && idx>=0 && idx<RANKS.length-1){
+        memberCard = { ...memberCard, rank: RANKS[idx+1] as any };
+      }
+
+      newState.guild = { ...(newState.guild||{}), completedQuests: newCq, memberCard, isMember: true };
+      return newState;
     });
     markDirty();
   }
@@ -282,7 +326,7 @@ function useItem(item:any){
   markDirty();
 }
 
-  const ctx: Ctx = {
+  const ctx: Ctx = { touch: ()=>markDirty(),
     state, setState,
     giveXP, giveCoins, spendStamina, recoverStamina, changeHP,
     ensureMemberCard, completeGuildMission, addLootToInventory,
@@ -314,3 +358,18 @@ export function useGame(){
 
 
 // added by patch: useItem (consume consumables)
+
+
+// HP regeneration loop
+if(typeof window!=='undefined'){
+  setInterval(()=>{
+    setState(prev=>{
+      const stats=prev.player.stats||{};
+      const hp=stats.hp||0; const maxHp=stats.maxHp||100;
+      if(hp<maxHp){
+        return { ...prev, player:{ ...prev.player, stats:{ ...stats, hp: Math.min(maxHp,hp+2), maxHp } } };
+      }
+      return prev;
+    });
+  },3000);
+}

@@ -1,30 +1,22 @@
 'use client';
-import { useEffect } from 'react';
-// Ajuste esse import se seu useGame estiver em outro caminho; aqui usamos alias padrão
-import { useGame } from '@/providers/GameProvider';
+import React from 'react';
+import { useDailyMarket } from '@/hooks/useDailyMarket';
+import { useGame } from '@/context/GameProvider_aldor_client';
+import { Market } from './Market';
 
-export default function MarketProviderBridge(){
-  const game = (()=>{ try{ return useGame(); }catch{ return null as any; }})();
-  const actions = game?.actions;
+export function MarketProviderBridge(){
+  const { state, addLootToInventory, giveCoins, touch } = useGame();
+  const { items, buy } = useDailyMarket({
+    worldDateMs: state.world?.dateMs || Date.now(),
+    playerLevel: state.player?.level || 1,
+    coins: state.player?.coins || {},
+    equipped: state.player?.equipment || {},
+    slotId: state.slotId,
+    season: state.world?.season,
+    weather: state.world?.weather,
+    temperature: state.world?.temperature,
+    providerActions: { addLootToInventory, giveCoins, touch }
+  });
 
-  useEffect(()=>{
-    function onBuy(e:any){ try{ actions?.market?.buy?.(e.detail.item, e.detail.finalPrice) }catch{} }
-    function onCoins(e:any){ try{ actions?.coins?.deduct?.(e.detail.price) }catch{} }
-    function onInv(e:any){ try{ actions?.inventory?.add?.(e.detail.item) }catch{} }
-    function onSave(e:any){ try{ actions?.save?.autosave?.(e.detail.reason) }catch{} }
-
-    window.addEventListener('market:buy', onBuy as any);
-    window.addEventListener('coins:deduct', onCoins as any);
-    window.addEventListener('inventory:add', onInv as any);
-    window.addEventListener('save:autosave', onSave as any);
-
-    return ()=>{
-      window.removeEventListener('market:buy', onBuy as any);
-      window.removeEventListener('coins:deduct', onCoins as any);
-      window.removeEventListener('inventory:add', onInv as any);
-      window.removeEventListener('save:autosave', onSave as any);
-    };
-  }, [actions]);
-
-  return null;
+  return <Market items={items} buy={buy}/>;
 }

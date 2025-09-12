@@ -94,7 +94,7 @@ export default function Page(){
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <h1 className="text-2xl font-bold truncate">{player.name || 'Aventureiro'}</h1>
+              <h1 className="text-2xl font-bold truncate">{player.character?.name || player.name || 'Aventureiro'}</h1>
               <span className="text-xs px-2 py-1 rounded bg-emerald-600/30 border border-emerald-500/30">Nível {player.level}</span>
             </div>
             {/* XP bar */}
