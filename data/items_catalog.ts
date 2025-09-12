@@ -1802,7 +1802,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 13,
   valueCopper: 462,
   def: 32,
-  image: 'armor_leather.png'
+  image: 'mithril_glooves.png'
 },
 {
   id: 'armadura_27',
@@ -1816,7 +1816,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 15,
   valueCopper: 151,
   def: 5,
-  image: 'armor_leather.png'
+  image: 'mithril_glooves.png'
 },
 {
   id: 'armadura_28',

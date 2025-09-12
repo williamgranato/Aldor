@@ -4,7 +4,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import type { GameState, CoinPouch, Rank } from '@/types_aldor_client';
 import { addPouch } from '@/utils/money_aldor_client';
 import { getGuildMissions } from '@/data/missoes';
-import { ReputationEntry, updateReputation } from '@/data/market_addons';
 
 type Ctx = any;
 
@@ -16,7 +15,7 @@ function rankThreshold(rank: Rank): number {
   return 10 * Math.pow(2, stepsFromF);
 }
 
-const defaultState: GameState & { reputation: ReputationEntry[] } = {
+const defaultState: GameState = {
   player: {
     id: 'player1',
     character: { id:'char1', name:'Aventureiro', origin:'', role:'', race:'humano' },
@@ -31,30 +30,19 @@ const defaultState: GameState & { reputation: ReputationEntry[] } = {
     status: [],
     coins: { gold:0, silver:0, bronze:0, copper:0 },
     inventory: [],
-    equipment: { cabeca:null, peito:null, mao_principal:null, mao_secundaria:null, pernas:null, botas:null, anel:null, amuleto:null },
     skills: {}
   },
   guild: { isMember:false, completedQuests:[], activeQuests:[], memberCard: undefined as any },
   world: { dateMs: Date.now() },
-  ui: { headerStyle: 'modern' },
-  reputation: []
+  ui: { headerStyle: 'modern' }
 };
-
-const emptyEquipment = {
-  cabeca:null, peito:null, mao_principal:null, mao_secundaria:null,
-  pernas:null, botas:null, anel:null, amuleto:null
-};
-
-function normalizeEquipment(eq:any){
-  return { ...emptyEquipment, ...(eq||{}) };
-}
 
 const GameContext = createContext<Ctx|null>(null);
 
 export function GameProvider({ children }:{children:React.ReactNode}){
   const router = useRouter();
   const pathname = usePathname();
-  const [state, setState] = useState(defaultState);
+  const [state, setState] = useState<GameState>(defaultState);
   const [hydrated, setHydrated] = useState(false);
   const dirtyRef = useRef(false);
   function markDirty(){ dirtyRef.current = true; }
@@ -185,83 +173,10 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     markDirty();
   }
 
-
-
-// === NOVA FUNÇÃO: DISTRIBUIR ATRIBUTOS ===
-function increaseAttribute(attr: keyof typeof state.player.attributes){
-  setState(prev => {
-    if(prev.player.statPoints <= 0) return prev;
-    if(!(attr in prev.player.attributes)) return prev;
-    return {
-      ...prev,
-      player: {
-        ...prev.player,
-        attributes: { ...prev.player.attributes, [attr]: (prev.player.attributes as any)[attr] + 1 },
-        statPoints: prev.player.statPoints - 1
-      }
-    };
-  });
-  markDirty();
-}
-  
-// === EQUIPAMENTOS: equipar / desequipar ===
-function equip(slot: keyof typeof state.player.equipment, item: any){
-  if(!slot || !item) return;
-  setState(prev=>{
-    const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory] : [];
-    const idx = inv.findIndex(i=> i.id === item.id);
-    if(idx === -1) return prev;
-    const equipment = normalizeEquipment(prev.player.equipment);
-    const current = equipment[slot];
-    inv.splice(idx,1);
-    if(current){ inv.push(current); }
-    const newEquipment = { ...equipment, [slot]: item };
-    return { ...prev, player: { ...prev.player, inventory: inv, equipment: newEquipment } };
-  });
-  markDirty();
-}
-
-
-function unequip(slot: keyof typeof state.player.equipment){
-  setState(prev=>{
-    const equipment = normalizeEquipment(prev.player.equipment);
-    const current = equipment[slot];
-    if(!current) return prev;
-    const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory, current] : [current];
-    const newEquipment = { ...equipment, [slot]: null };
-    return { ...prev, player: { ...prev.player, inventory: inv, equipment: newEquipment } };
-  });
-  markDirty();
-}
-
-// === NOVAS FUNÇÕES DE MERCADO ===
-  function comprar(item:any, priceCopper:number, merchantId:string){
-    setState(prev=>{
-      const pouch = { ...prev.player.coins, copper: (prev.player.coins.copper||0) - priceCopper };
-      if(pouch.copper < 0) return prev; // sem dinheiro
-      const inv:any[] = (prev.player.inventory as any[]) || [];
-      const updatedInv = [...inv, { ...item, qty:1 }];
-      return {
-        ...prev,
-        player: { ...prev.player, coins: pouch, inventory: updatedInv },
-        reputation: updateReputation(prev.reputation||[], merchantId, +1)
-      };
-    });
-    markDirty();
-  }
-
-  function reputationAdd(merchantId:string, delta:number){
-    setState(prev=>({
-      ...prev,
-      reputation: updateReputation(prev.reputation||[], merchantId, delta)
-    }));
-    markDirty();
-  }
-
   // Hydrate from localStorage
-  useEffect(()=>{ const l = loadSave(); if(l) setState((p:any)=>({ ...p, ...l, player:{ ...p.player, ...l.player, equipment: normalizeEquipment(l.player?.equipment) } })); },[]);
+  useEffect(()=>{ const l = loadSave(); if(l) setState((p:any)=>({ ...p, ...l })); },[]);
 
-  // Dirty flag flush + stamina regen
+  // Dirty flag flush + stamina regen (+1 a cada 5s, com lastRegenAt)
   useEffect(()=>{
     const id = setInterval(()=>{
       if(dirtyRef.current) saveNow(state);
@@ -295,7 +210,7 @@ function unequip(slot: keyof typeof state.player.equipment){
   // Hydration ready -> habilita guard
   useEffect(()=>{ setHydrated(true); },[]);
 
-  // Guard de criação de personagem
+  // Guard de criação de personagem (só após hydration)
   useEffect(()=>{
     const isNew = (!state?.player?.character?.origin) && (!state?.player?.character?.name || state.player.character.name === 'Aventureiro');
     if(hydrated && isNew && pathname !== '/create-character'){
@@ -307,8 +222,7 @@ function unequip(slot: keyof typeof state.player.equipment){
     state, setState,
     giveXP, giveCoins, spendStamina, recoverStamina, changeHP,
     ensureMemberCard, completeGuildMission, addLootToInventory,
-    resetSave,
-    comprar, reputationAdd, increaseAttribute, equip, unequip
+    resetSave
   };
 
   return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;
@@ -318,4 +232,32 @@ export function useGame(){
   const ctx = useContext(GameContext);
   if(!ctx) throw new Error('useGame must be used inside GameProvider');
   return ctx;
+}
+
+
+// added by patch: useItem (consume consumables)
+function useItem(item:any){
+  if(!item) return;
+  setState(prev=>{
+    const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory] : [];
+    const idx = inv.findIndex(i=> i.id === item.id);
+    if(idx === -1) return prev;
+    const newInv = [...inv];
+    const existing = newInv[idx];
+    if(existing?.qty && existing.qty > 1){ newInv[idx] = { ...existing, qty: existing.qty - 1 }; }
+    else { newInv.splice(idx,1); }
+    let newPlayer = { ...prev.player, inventory: newInv };
+    if(item.hp){
+      const st = newPlayer.stats;
+      const hp = Math.min(st.maxHp, st.hp + (item.hp||0));
+      newPlayer = { ...newPlayer, stats: { ...st, hp } };
+    }
+    if(item.stamina){
+      const st = newPlayer.stamina;
+      const current = Math.min(st.max, st.current + (item.stamina||0));
+      newPlayer = { ...newPlayer, stamina: { ...st, current } };
+    }
+    return { ...prev, player: newPlayer };
+  });
+  markDirty();
 }
