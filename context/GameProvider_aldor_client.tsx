@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect, useContext, createContext } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import type { GameState, CoinPouch, Rank } from '@/types_aldor_client';
 import { addPouch } from '@/utils/money_aldor_client';
 
@@ -8,10 +8,6 @@ type Ctx = any;
 
 const RANKS: Rank[] = ['F','E','D','C','B','A','S','SS','SSS'] as any;
 
-function nextRank(r:Rank): Rank {
-  const i = RANKS.indexOf(r);
-  return (RANKS[Math.min(RANKS.length-1, i+1)] || r) as Rank;
-}
 function rankThreshold(rank: Rank): number {
   const idx = Math.max(0, RANKS.indexOf(rank));
   const stepsFromF = Math.max(0, idx - RANKS.indexOf('F'));
@@ -21,7 +17,7 @@ function rankThreshold(rank: Rank): number {
 const defaultState: GameState = {
   player: {
     id: 'player1',
-    character: { id:'char1', name:'Aventureiro', origin:'Desconhecido', role:'guerreiro', race:'humano' },
+    character: { id:'char1', name:'Aventureiro', origin:'', role:'', race:'humano' },
     guildRank: 0,
     adventurerRank: 'Sem Guilda',
     xp: 0,
@@ -44,6 +40,7 @@ const GameContext = createContext<Ctx|null>(null);
 
 export function GameProvider({ children }:{children:React.ReactNode}){
   const router = useRouter();
+  const pathname = usePathname();
   const [state, setState] = useState<GameState>(defaultState);
   const dirtyRef = useRef(false);
   function markDirty(){ dirtyRef.current = true; }
@@ -128,10 +125,21 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     markDirty();
   }
 
-  function completeGuildMission(rank: Rank){
+  function addLootToInventory(drops: {id:string; name:string; icon?:string}[]){
+    if(!drops?.length) return;
     setState(prev=>{
-      const cq = prev.guild.completedQuests ?? [];
-      const newCq = [...cq, { id: `m_${Date.now()}`, rank, at: Date.now() }];
+      const inv:any[] = (prev.player.inventory as any[]) || [];
+      const updated = [...inv, ...drops.map(d=>({ ...d, qty:1 }))];
+      return { ...prev, player: { ...prev.player, inventory: updated as any } };
+    });
+    markDirty();
+  }
+
+  function completeGuildMission(rank: Rank, payload?: {xp?:number; copper?:number; drops?: any[]; title?:string}){
+    setState(prev=>{
+      const cq:any[] = (prev.guild.completedQuests as any[]) ?? [];
+      const entry:any = { id: `m_${Date.now()}`, rank, at: Date.now(), ...payload };
+      const newCq = [entry, ...cq].slice(0, 100);
       const currentRank: Rank = (prev.guild.memberCard?.rank || 'F') as Rank;
       const doneAtCurrent = newCq.filter(q=>q.rank===currentRank).length;
       let memberCard = prev.guild.memberCard || { name: prev.player.character.name, origin: prev.player.character.origin, role: prev.player.character.role, rank: 'F' as Rank };
@@ -167,12 +175,26 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     return ()=>{ clearInterval(id); window.removeEventListener('beforeunload', flush); window.removeEventListener('visibilitychange', flush); };
   },[state]);
 
-  useEffect(()=>{ recalcStaminaMax(); }, [state.player.attributes.intelligence]);
+  useEffect(()=>{ 
+    setState(prev=>{
+      const max = 100 + Math.max(0, Math.floor(prev.player.attributes.intelligence||0))*3;
+      const st = prev.player.stamina;
+      const current = Math.min(max, st.current);
+      return { ...prev, player: { ...prev.player, stamina: { ...st, max, current } } };
+    });
+  }, [state.player.attributes.intelligence]);
+
+  useEffect(()=>{
+    const isNew = !state?.player?.character?.origin || state.player.character.name === 'Aventureiro';
+    if(isNew && pathname !== '/create-character'){
+      router.replace('/create-character');
+    }
+  },[state?.player?.character, pathname, router]);
 
   const ctx: Ctx = {
     state, setState,
     giveXP, giveCoins, spendStamina, recoverStamina, changeHP,
-    ensureMemberCard, completeGuildMission,
+    ensureMemberCard, completeGuildMission, addLootToInventory,
     resetSave
   };
 
