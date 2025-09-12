@@ -378,7 +378,7 @@ export function socketCost(action: 'encaixar'|'remover', item: Item, gem: GemSpe
 export const EXTRA_ITEMS: Item[] = [
 {
   id: 'arma_0',
-  name: 'Arco de Tecido',
+  name: 'Arco de Madeira',
   type: 'arma',
   slot: 'mão_principal',
   rarity: 'lendário',
@@ -393,7 +393,7 @@ export const EXTRA_ITEMS: Item[] = [
 },
 {
   id: 'arma_1',
-  name: 'Martelo de Tecido',
+  name: 'Martelo de Pedra',
   type: 'arma',
   slot: 'mão_principal',
   rarity: 'épico',
@@ -573,7 +573,7 @@ export const EXTRA_ITEMS: Item[] = [
 },
 {
   id: 'arma_13',
-  name: 'Espada de Couro',
+  name: 'Espada Curta de Ferro',
   type: 'arma',
   slot: 'mão_principal',
   rarity: 'comum',
@@ -588,7 +588,7 @@ export const EXTRA_ITEMS: Item[] = [
 },
 {
   id: 'arma_14',
-  name: 'Foice de Couro',
+  name: 'Foice de Ferro',
   type: 'arma',
   slot: 'mão_principal',
   rarity: 'comum',
@@ -1338,7 +1338,7 @@ export const EXTRA_ITEMS: Item[] = [
 },
 {
   id: 'arma_64',
-  name: 'Martelo de Tecido',
+  name: 'Martelo de Pedra',
   type: 'arma',
   slot: 'mão_principal',
   rarity: 'comum',
@@ -2415,7 +2415,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 71,
   bonuses: { HP: 78 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_1',
@@ -2426,7 +2426,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 44,
   bonuses: { HP: 29 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_2',
@@ -2437,7 +2437,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 95,
   bonuses: { HP: 173 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_3',
@@ -2448,7 +2448,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 64,
   bonuses: { HP: 196 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_4',
@@ -2459,7 +2459,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 32,
   bonuses: { HP: 159 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_5',
@@ -2470,7 +2470,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 92,
   bonuses: { HP: 196 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_6',
@@ -2481,7 +2481,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 13,
   bonuses: { HP: 140 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_7',
@@ -2492,7 +2492,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 87,
   bonuses: { HP: 88 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_8',
@@ -2503,7 +2503,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 64,
   bonuses: { HP: 74 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_9',
@@ -2514,7 +2514,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 93,
   bonuses: { HP: 113 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_10',
@@ -2525,7 +2525,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 65,
   bonuses: { HP: 51 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_11',
@@ -2536,7 +2536,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 37,
   bonuses: { HP: 154 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_12',
@@ -2547,7 +2547,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 63,
   bonuses: { HP: 115 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_13',
@@ -2558,7 +2558,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 41,
   bonuses: { HP: 128 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_14',
@@ -2569,7 +2569,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 87,
   bonuses: { HP: 178 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_15',
@@ -2580,7 +2580,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 23,
   bonuses: { HP: 97 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_16',
@@ -2591,7 +2591,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 95,
   bonuses: { HP: 84 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_17',
@@ -2602,7 +2602,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 97,
   bonuses: { HP: 155 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_18',
@@ -2613,7 +2613,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 38,
   bonuses: { HP: 141 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_19',
@@ -2624,7 +2624,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 49,
   bonuses: { HP: 79 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_20',
@@ -2635,7 +2635,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 70,
   bonuses: { HP: 170 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_21',
@@ -2646,7 +2646,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 46,
   bonuses: { HP: 135 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_22',
@@ -2657,7 +2657,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 64,
   bonuses: { HP: 191 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_23',
@@ -2668,7 +2668,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 93,
   bonuses: { HP: 86 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_24',
@@ -2679,7 +2679,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 62,
   bonuses: { HP: 180 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_25',
@@ -2690,7 +2690,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 84,
   bonuses: { HP: 78 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_26',
@@ -2701,7 +2701,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 67,
   bonuses: { HP: 43 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_27',
@@ -2712,7 +2712,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 88,
   bonuses: { HP: 198 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_28',
@@ -2723,7 +2723,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 47,
   bonuses: { HP: 34 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_29',
@@ -2734,7 +2734,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 82,
   bonuses: { HP: 43 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_30',
@@ -2745,7 +2745,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 70,
   bonuses: { HP: 95 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_31',
@@ -2756,7 +2756,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 77,
   bonuses: { HP: 117 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_32',
@@ -2767,7 +2767,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 15,
   bonuses: { HP: 174 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_33',
@@ -2778,7 +2778,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 24,
   bonuses: { HP: 127 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_34',
@@ -2789,7 +2789,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 15,
   bonuses: { HP: 125 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_35',
@@ -2800,7 +2800,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 60,
   bonuses: { HP: 133 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_36',
@@ -2811,7 +2811,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 70,
   bonuses: { HP: 152 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_37',
@@ -2822,7 +2822,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 22,
   bonuses: { HP: 36 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_38',
@@ -2833,7 +2833,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 68,
   bonuses: { HP: 106 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_39',
@@ -2844,7 +2844,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 88,
   bonuses: { HP: 180 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_40',
@@ -2855,7 +2855,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 14,
   bonuses: { HP: 64 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_41',
@@ -2866,7 +2866,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 67,
   bonuses: { HP: 105 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_42',
@@ -2877,7 +2877,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 67,
   bonuses: { HP: 55 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_43',
@@ -2888,7 +2888,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 58,
   bonuses: { HP: 50 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_44',
@@ -2899,7 +2899,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 76,
   bonuses: { HP: 82 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_45',
@@ -2910,7 +2910,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 23,
   bonuses: { HP: 43 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_46',
@@ -2921,7 +2921,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 47,
   bonuses: { HP: 181 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_47',
@@ -2932,7 +2932,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 62,
   bonuses: { HP: 86 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_48',
@@ -2943,7 +2943,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 82,
   bonuses: { HP: 33 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_49',
@@ -2954,7 +2954,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 95,
   bonuses: { HP: 162 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_50',
@@ -2965,7 +2965,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 8,
   bonuses: { HP: 68 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_51',
@@ -2976,7 +2976,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 44,
   bonuses: { HP: 190 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_52',
@@ -2987,7 +2987,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 84,
   bonuses: { HP: 136 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_53',
@@ -2998,7 +2998,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 78,
   bonuses: { HP: 58 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_54',
@@ -3009,7 +3009,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 98,
   bonuses: { HP: 96 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_55',
@@ -3020,7 +3020,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 74,
   bonuses: { HP: 99 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_56',
@@ -3031,7 +3031,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 15,
   bonuses: { HP: 75 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_57',
@@ -3042,7 +3042,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 87,
   bonuses: { HP: 38 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_58',
@@ -3053,7 +3053,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 15,
   bonuses: { HP: 199 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 },
 {
   id: 'comida_59',
@@ -3064,7 +3064,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 22,
   bonuses: { HP: 140 },
-  image: '/images/items/foods/placeholder.png'
+  image: 'Banquete Medieval Delicioso.png'
 }
 ];
 

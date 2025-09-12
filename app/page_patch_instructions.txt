@@ -1,8 +1,0 @@
-// ... no topo de app/page.tsx
-import ActivityLog from '@/components/ActivityLog';
-
-// ... dentro do JSX principal, antes de fechar a div principal
-<div className="rounded-2xl bg-neutral-900/60 border border-neutral-800 p-4">
-  <div className="font-semibold mb-2">Atividade Recente</div>
-  <ActivityLog logs={player.logs||[]} />
-</div>

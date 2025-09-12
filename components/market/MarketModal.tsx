@@ -3,6 +3,8 @@ import React from 'react';
 import Image from 'next/image';
 import type { GeneratedMarketItem } from '@/types/market';
 import { PriceRow } from '@/utils/priceDisplay';
+import itemsCatalog from '@/data/items_catalog';
+import { getItemImagePath } from '@/utils/images';
 
 type Props = {
   item: GeneratedMarketItem | null;
@@ -11,11 +13,19 @@ type Props = {
   canAfford: (price:any)=>boolean;
 };
 
+function resolveImage(item: GeneratedMarketItem): string {
+  if (item.image) return getItemImagePath(item.image);
+  const fromCatalog: any = (itemsCatalog as any[]).find(it => it.id === item.id);
+  if (fromCatalog?.image) return getItemImagePath(fromCatalog.image);
+  return '/images/items/placeholder.png';
+}
+
 export function MarketModal({ item, onClose, onBuy, canAfford }: Props){
   if(!item) return null;
   const final = item.discountedPrice ?? item.price;
   const afford = canAfford(final);
   const out = item.stock<=0;
+  const imgSrc = resolveImage(item);
 
   return (
     <div className="fixed inset-0 z-50">
@@ -28,7 +38,7 @@ export function MarketModal({ item, onClose, onBuy, canAfford }: Props){
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
             <div>
               <div className="w-full aspect-square bg-black/20 rounded-xl overflow-hidden flex items-center justify-center">
-                <Image src={item.image || '/images/items/placeholder.png'} alt={item.name} width={512} height={512} className="object-contain w-full h-full" />
+                <Image src={imgSrc} alt={item.name} width={512} height={512} className="object-contain w-full h-full" />
               </div>
               <div className="mt-3">
                 <PriceRow price={final} />
@@ -37,7 +47,6 @@ export function MarketModal({ item, onClose, onBuy, canAfford }: Props){
             <div className="min-h-[12rem]">
               <h2 className="text-xl font-bold">{item.name}</h2>
               <div className="text-xs uppercase tracking-wide opacity-60">{item.type} · {item.rarity}{item.slot? ' · '+item.slot : ''}</div>
-
               <div className="mt-3 grid grid-cols-2 gap-y-1 text-sm">
                 {typeof item.reqLevel==='number' && <div>Requer nível: <b>{item.reqLevel}</b></div>}
                 {typeof item.weight==='number' && <div>Peso: <b>{item.weight}</b></div>}
@@ -48,7 +57,6 @@ export function MarketModal({ item, onClose, onBuy, canAfford }: Props){
                 {typeof item.dodge==='number' && <div>DODGE: <b>{item.dodge}%</b></div>}
                 {typeof item.hp==='number' && <div>HP: <b>{item.hp}</b></div>}
               </div>
-
               {item.bonuses && Object.keys(item.bonuses).length>0 && (
                 <div className="mt-3">
                   <div className="text-xs uppercase tracking-wide opacity-60 mb-1">Bônus</div>
@@ -59,7 +67,6 @@ export function MarketModal({ item, onClose, onBuy, canAfford }: Props){
                   </div>
                 </div>
               )}
-
               {item.set && (
                 <div className="mt-3">
                   <div className="text-xs uppercase tracking-wide opacity-60">Conjunto</div>
@@ -67,19 +74,15 @@ export function MarketModal({ item, onClose, onBuy, canAfford }: Props){
                   {item.setBonus && <div className="text-xs opacity-80 mt-1">{item.setBonus}</div>}
                 </div>
               )}
-
               {item.lore && <p className="mt-3 text-sm opacity-80">{item.lore}</p>}
             </div>
           </div>
           <div className="sticky bottom-0 w-full border-t border-white/10 p-4 bg-black/20 backdrop-blur-md">
             <div className="flex flex-wrap items-center justify-end gap-2">
               <button className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 transition text-sm" onClick={onClose}>Fechar</button>
-              <button
-                className={`px-4 py-2 rounded-xl text-sm ${(!afford||out) ? 'bg-white/10 opacity-60 cursor-not-allowed' : 'bg-emerald-500/90 hover:bg-emerald-500 text-black'}`}
-                disabled={!afford||out}
-                onClick={()=> onBuy(item.id)}
-                title={!afford ? 'Moedas insuficientes' : out ? 'Esgotado' : 'Comprar'}
-              >Comprar</button>
+              <button className={`px-4 py-2 rounded-xl text-sm ${(!afford||out) ? 'bg-white/10 opacity-60 cursor-not-allowed' : 'bg-emerald-500/90 hover:bg-emerald-500 text-black'}`} disabled={!afford||out} onClick={()=> onBuy(item.id)} title={!afford ? 'Moedas insuficientes' : out ? 'Esgotado' : 'Comprar'}>
+                Comprar
+              </button>
             </div>
           </div>
         </div>

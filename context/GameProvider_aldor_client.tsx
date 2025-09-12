@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import type { GameState, CoinPouch, Rank } from '@/types_aldor_client';
 import { addPouch } from '@/utils/money_aldor_client';
 import { getGuildMissions } from '@/data/missoes';
+import { ReputationEntry, updateReputation } from '@/data/market_addons';
 
 type Ctx = any;
 
@@ -15,7 +16,7 @@ function rankThreshold(rank: Rank): number {
   return 10 * Math.pow(2, stepsFromF);
 }
 
-const defaultState: GameState = {
+const defaultState: GameState & { reputation: ReputationEntry[] } = {
   player: {
     id: 'player1',
     character: { id:'char1', name:'Aventureiro', origin:'', role:'', race:'humano' },
@@ -34,7 +35,8 @@ const defaultState: GameState = {
   },
   guild: { isMember:false, completedQuests:[], activeQuests:[], memberCard: undefined as any },
   world: { dateMs: Date.now() },
-  ui: { headerStyle: 'modern' }
+  ui: { headerStyle: 'modern' },
+  reputation: []
 };
 
 const GameContext = createContext<Ctx|null>(null);
@@ -42,7 +44,7 @@ const GameContext = createContext<Ctx|null>(null);
 export function GameProvider({ children }:{children:React.ReactNode}){
   const router = useRouter();
   const pathname = usePathname();
-  const [state, setState] = useState<GameState>(defaultState);
+  const [state, setState] = useState(defaultState);
   const [hydrated, setHydrated] = useState(false);
   const dirtyRef = useRef(false);
   function markDirty(){ dirtyRef.current = true; }
@@ -173,10 +175,34 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     markDirty();
   }
 
+  // === NOVAS FUNÇÕES DE MERCADO ===
+  function comprar(item:any, priceCopper:number, merchantId:string){
+    setState(prev=>{
+      const pouch = { ...prev.player.coins, copper: (prev.player.coins.copper||0) - priceCopper };
+      if(pouch.copper < 0) return prev; // sem dinheiro
+      const inv:any[] = (prev.player.inventory as any[]) || [];
+      const updatedInv = [...inv, { ...item, qty:1 }];
+      return {
+        ...prev,
+        player: { ...prev.player, coins: pouch, inventory: updatedInv },
+        reputation: updateReputation(prev.reputation||[], merchantId, +1)
+      };
+    });
+    markDirty();
+  }
+
+  function reputationAdd(merchantId:string, delta:number){
+    setState(prev=>({
+      ...prev,
+      reputation: updateReputation(prev.reputation||[], merchantId, delta)
+    }));
+    markDirty();
+  }
+
   // Hydrate from localStorage
   useEffect(()=>{ const l = loadSave(); if(l) setState((p:any)=>({ ...p, ...l })); },[]);
 
-  // Dirty flag flush + stamina regen (+1 a cada 5s, com lastRegenAt)
+  // Dirty flag flush + stamina regen
   useEffect(()=>{
     const id = setInterval(()=>{
       if(dirtyRef.current) saveNow(state);
@@ -210,7 +236,7 @@ export function GameProvider({ children }:{children:React.ReactNode}){
   // Hydration ready -> habilita guard
   useEffect(()=>{ setHydrated(true); },[]);
 
-  // Guard de criação de personagem (só após hydration)
+  // Guard de criação de personagem
   useEffect(()=>{
     const isNew = (!state?.player?.character?.origin) && (!state?.player?.character?.name || state.player.character.name === 'Aventureiro');
     if(hydrated && isNew && pathname !== '/create-character'){
@@ -222,7 +248,8 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     state, setState,
     giveXP, giveCoins, spendStamina, recoverStamina, changeHP,
     ensureMemberCard, completeGuildMission, addLootToInventory,
-    resetSave
+    resetSave,
+    comprar, reputationAdd
   };
 
   return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;

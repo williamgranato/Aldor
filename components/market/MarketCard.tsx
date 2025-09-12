@@ -3,6 +3,8 @@ import React from 'react';
 import Image from 'next/image';
 import type { GeneratedMarketItem } from '@/types/market';
 import { PriceRow } from '@/utils/priceDisplay';
+import itemsCatalog from '@/data/items_catalog';
+import { getItemImagePath } from '@/utils/images';
 
 type Props = {
   item: GeneratedMarketItem;
@@ -19,6 +21,13 @@ const rarityRing: Record<string, string> = {
   legendary: 'ring-1 ring-amber-400/50',
 };
 
+function resolveImage(item: GeneratedMarketItem): string {
+  if (item.image) return getItemImagePath(item.image);
+  const fromCatalog: any = (itemsCatalog as any[]).find(it => it.id === item.id);
+  if (fromCatalog?.image) return getItemImagePath(fromCatalog.image);
+  return '/images/items/placeholder.png';
+}
+
 export function MarketCard({ item, onView, onBuy, canAfford }: Props){
   const mainAttr = (()=>{
     if(item.type==='weapon'){
@@ -31,8 +40,8 @@ export function MarketCard({ item, onView, onBuy, canAfford }: Props){
       const chips = Object.entries(item.bonuses ?? {}).filter(([_,v])=>typeof v==='number' && v!==0).slice(0,3);
       return <div className="flex flex-wrap gap-1">{chips.map(([k,v])=>(<span key={k} className="text-[10px] px-2 py-0.5 rounded-full bg-white/10">{k}+{v}</span>))}</div>;
     }
-    if(item.type==='potion'){
-      return <div className="text-xs opacity-80">{item.hp? <>Cura <b className="font-semibold">{item.hp}</b></>: 'Poção'}</div>;
+    if(item.type==='potion' || item.type==='comida'){
+      return <div className="text-xs opacity-80">{item.hp? <>Cura <b className="font-semibold">{item.hp}</b></>: 'Consumível'}</div>;
     }
     return null;
   })();
@@ -42,7 +51,7 @@ export function MarketCard({ item, onView, onBuy, canAfford }: Props){
   const out = item.stock<=0;
   const badge = item.isFlash ? '🔥 Oferta' : (out ? 'Esgotado' : null);
 
-  const imgSrc = item.image || '/images/items/placeholder.png';
+  const imgSrc = resolveImage(item);
 
   return (
     <div className={`rounded-2xl p-3 bg-white/5 backdrop-blur-sm hover:-translate-y-0.5 transition-all shadow-sm ${rarityRing[item.rarity] ?? 'ring-1 ring-white/10'} ring-inset`}>
@@ -53,33 +62,20 @@ export function MarketCard({ item, onView, onBuy, canAfford }: Props){
         <div className="w-full aspect-square overflow-hidden rounded-xl bg-black/20 flex items-center justify-center">
           <Image src={imgSrc} alt={item.name} width={256} height={256} className="object-contain w-full h-full" />
         </div>
-
-        {/* PRICE ROW directly under the image */}
         <div className="mt-2">
           <PriceRow price={finalPrice} />
         </div>
       </div>
-
       <div className="mt-3">
         <div className="text-sm font-semibold leading-tight line-clamp-1">{item.name}</div>
         <div className="mt-1">{mainAttr}</div>
         <div className="mt-1 text-[10px] uppercase tracking-wide opacity-60">{item.rarity}</div>
       </div>
-
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <button
-          className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 transition text-sm"
-          onClick={()=>onView(item)}
-          aria-label={`Ver mais sobre ${item.name}`}
-        >
+        <button className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 transition text-sm" onClick={()=>onView(item)} aria-label={`Ver mais sobre ${item.name}`}>
           Ver mais
         </button>
-        <button
-          className={`px-3 py-2 rounded-xl text-sm ${(!afford||out) ? 'bg-white/10 opacity-60 cursor-not-allowed' : 'bg-emerald-500/90 hover:bg-emerald-500 text-black'}`}
-          disabled={!afford||out}
-          onClick={()=> onBuy(item.id)}
-          title={!afford ? 'Moedas insuficientes' : out ? 'Esgotado' : 'Comprar'}
-        >
+        <button className={`px-3 py-2 rounded-xl text-sm ${(!afford||out) ? 'bg-white/10 opacity-60 cursor-not-allowed' : 'bg-emerald-500/90 hover:bg-emerald-500 text-black'}`} disabled={!afford||out} onClick={()=> onBuy(item.id)} title={!afford ? 'Moedas insuficientes' : out ? 'Esgotado' : 'Comprar'}>
           Comprar
         </button>
       </div>
