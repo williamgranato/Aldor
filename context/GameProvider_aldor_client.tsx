@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useContext, createContext } from 'r
 import { useRouter, usePathname } from 'next/navigation';
 import type { GameState, CoinPouch, Rank } from '@/types_aldor_client';
 import { addPouch } from '@/utils/money_aldor_client';
+import { getGuildMissions } from '@/data/missoes';
 
 type Ctx = any;
 
@@ -57,11 +58,28 @@ export function GameProvider({ children }:{children:React.ReactNode}){
   }
 
   function ensureMemberCard(){
-    setState(prev=>{
-      if(prev.guild.isMember && prev.guild.memberCard?.rank) return prev;
+    setState(prev => {
+      if(prev.guild.isMember && prev.guild.memberCard?.rank && prev.guild.activeQuests?.length) return prev;
       const rank: Rank = (prev.guild.memberCard?.rank || 'F') as Rank;
-      const card = { name: prev.player.character.name, origin: prev.player.character.origin, role: prev.player.character.role, rank };
-      return { ...prev, guild: { ...prev.guild, isMember: true, memberCard: card } };
+      const card = prev.guild.memberCard ?? {
+        name: prev.player.character.name,
+        origin: prev.player.character.origin,
+        role: prev.player.character.role,
+        rank,
+      };
+      const activeQuests = (prev.guild.activeQuests?.length ?? 0) > 0
+        ? prev.guild.activeQuests
+        : getGuildMissions(rank);
+      return {
+        ...prev,
+        guild: {
+          ...prev.guild,
+          isMember: true,
+          memberCard: card,
+          activeQuests,
+          completedQuests: prev.guild.completedQuests ?? [],
+        },
+      };
     });
     markDirty();
   }

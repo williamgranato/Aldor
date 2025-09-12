@@ -1,31 +1,26 @@
 'use client';
-import React, {createContext, useContext, useState, useCallback} from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
-export type Toast = { id:string; title?:string; message:string; type?:'success'|'info'|'warning'|'error'; ttl?:number };
+type Toast = { id:number; title?:string; message:string; type:'success'|'error'|'warning'|'info'; ttl?:number };
 
-const ToastContext = createContext<{ add:(t:Omit<Toast,'id'>)=>void } | null>(null);
+const ToastContext = createContext<{ add:(t:Omit<Toast,'id'>)=>void }|null>(null);
 
 export function ToastProvider({children}:{children:React.ReactNode}){
   const [toasts,setToasts] = useState<Toast[]>([]);
-
-  const add = useCallback((t:Omit<Toast,'id'>)=>{
-    const id = Math.random().toString(36).slice(2);
-    const ttl = t.ttl ?? 3200;
-    setToasts(prev=>[...prev, {id, ...t}]);
-    setTimeout(()=> setToasts(prev=>prev.filter(x=>x.id!==id)), ttl);
-  },[]);
-
+  function add(t:Omit<Toast,'id'>){
+    const id = Date.now();
+    const toast:Toast = {id,...t};
+    setToasts(prev=>[...prev,toast]);
+    setTimeout(()=>setToasts(prev=>prev.filter(x=>x.id!==id)), t.ttl||3000);
+  }
   return (
     <ToastContext.Provider value={{add}}>
       {children}
-      <div className="pointer-events-none fixed top-3 right-3 z-50 space-y-2">
+      <div className="fixed bottom-0 left-0 right-0 flex flex-col items-center gap-2 mb-4 z-50">
         {toasts.map(t=>(
-          <div key={t.id} className={`pointer-events-auto min-w-[220px] max-w-[340px] rounded-lg border px-3 py-2 shadow-lg bg-zinc-900/90 backdrop-blur-md
-          ${t.type==='success'?'border-emerald-500/50':
-            t.type==='warning'?'border-amber-500/50':
-            t.type==='error'?'border-rose-500/50':'border-zinc-700'}`}>
-            {t.title && <div className="text-sm font-semibold mb-0.5">{t.title}</div>}
-            <div className="text-sm opacity-90">{t.message}</div>
+          <div key={t.id} className={`px-4 py-2 rounded shadow-md text-white max-w-sm w-full text-center ${t.type==='success'?'bg-green-600':t.type==='error'?'bg-red-600':t.type==='warning'?'bg-yellow-600':'bg-blue-600'}`}>
+            {t.title? <div className="font-bold">{t.title}</div>:null}
+            <div>{t.message}</div>
           </div>
         ))}
       </div>
@@ -35,6 +30,6 @@ export function ToastProvider({children}:{children:React.ReactNode}){
 
 export function useToasts(){
   const ctx = useContext(ToastContext);
-  if(!ctx) throw new Error('useToasts must be used within <ToastProvider/>');
+  if(!ctx) throw new Error('useToasts must be used inside <ToastProvider/>');
   return ctx;
 }
