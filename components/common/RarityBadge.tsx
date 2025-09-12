@@ -3,7 +3,7 @@ import React from 'react';
 import { rarityRingClass } from '@/utils/loot';
 
 export default function RarityBadge({icon, name, rarity}:{icon?:string; name:string; rarity?:string}){
-  const ring = rarityRingClass(rarity as any);
+  const ring = rarityRingClass(rarity);
   const src = icon ? (icon.startsWith('/')? icon : '/'+icon) : '/images/items/unknown.png';
   return (
     <div className="flex items-center gap-2" title={`${name}${rarity? ' — '+rarity : ''}`}>

@@ -1,10 +1,16 @@
-// utils/loot.ts — loot balanceado (50% consumível, 10% equipamento, pesos por raridade)
-// Patch mínimo: mantemos assinatura e export `rollLootForRank`, mas enriquecemos com catálogos reais.
+// utils/loot.ts — loot balanceado corrigido (sem erro de syntax no type)
 import * as catalog from '@/data/items_catalog';
 import type { Rank } from '@/types_aldor_client';
 
-type Rarity = catalog.Rarity | 'mítico';
-type CatItem = catalog.Item & { rarity?: Rarity };
+export type Rarity =
+  | 'comum'
+  | 'incomum'
+  | 'raro'
+  | 'épico'
+  | 'lendário'
+  | 'mítico';
+
+type CatItem = any & { rarity?: Rarity };
 
 const RARITY_WEIGHTS: Record<Rarity, number> = {
   comum: 60,
@@ -17,11 +23,10 @@ const RARITY_WEIGHTS: Record<Rarity, number> = {
 
 const ORDER: Rank[] = ['F','E','D','C','B','A','S','SS','SSS'] as any;
 
-// Pequeno impulso para raridades altas em ranks superiores
 function rarityBoostForRank(rank: Rank){
   const idx = Math.max(0, ORDER.indexOf(rank));
   const fromF = Math.max(0, idx - ORDER.indexOf('F'));
-  const mult = 1 + (fromF * 0.08); // +8% por rank acima de F
+  const mult = 1 + (fromF * 0.08);
   return mult;
 }
 
@@ -33,7 +38,6 @@ function pickOne<T>(arr: T[]): T | null {
 function weightedPick<T extends CatItem>(arr: T[], rank: Rank): T | null {
   if(!arr.length) return null;
   const boost = rarityBoostForRank(rank);
-  // acumula pesos
   const weights = arr.map(it => (RARITY_WEIGHTS[(it.rarity as Rarity) || 'comum'] || 1) * ((it.rarity && it.rarity!=='comum') ? boost : 1));
   const total = weights.reduce((a,b)=>a+b,0);
   let r = Math.random() * total;
@@ -44,31 +48,27 @@ function weightedPick<T extends CatItem>(arr: T[], rank: Rank): T | null {
   return arr[arr.length-1];
 }
 
-function ensureIconPath(image: string | undefined){
+function ensureIconPath(image?: string){
   if(!image) return undefined;
-  // O projeto usa /public/images/items/*
-  if(image.startsWith('/images/')) return image.slice(1);
-  if(image.startsWith('images/')) return image;
-  return `images/items/${image}`.replace('//','/');
+  if(image.startsWith('/images/')) return image;
+  if(image.startsWith('images/')) return '/'+image;
+  return '/images/items/'+image;
 }
 
 type Drop = { id:string; name:string; icon?:string; rarity?: Rarity };
 
 export function rollLootForRank(rank: Rank){
-  const all: CatItem[] = (catalog.ITEMS as any) as CatItem[];
-
-  const consumiveis = all.filter(x => x.type==='comida' || x.type==='poção');
+  const all: any[] = (catalog as any).ITEMS || [];
+  const consumiveis = all.filter(x => x.type==='comida' || x.type==='poção' || x.type==='consumível');
   const equipaveis  = all.filter(x => x.type==='arma' || x.type==='armadura' || x.type==='acessório' || x.type==='joia');
 
   const drops: Drop[] = [];
 
-  // Sorteio 1: 50% consumível
   if(Math.random() < 0.50){
     const it = pickOne(consumiveis);
     if(it) drops.push({ id: it.id, name: it.name, icon: ensureIconPath(it.image), rarity: (it.rarity as Rarity) || 'comum' });
   }
 
-  // Sorteio 2: 10% equipável (com pesos por raridade)
   if(Math.random() < 0.10){
     const it = weightedPick(equipaveis, rank);
     if(it) drops.push({ id: it.id, name: it.name, icon: ensureIconPath(it.image), rarity: (it.rarity as Rarity) || 'comum' });
@@ -77,7 +77,6 @@ export function rollLootForRank(rank: Rank){
   return drops;
 }
 
-// Helpers de apresentação
 export function rarityRingClass(rarity?: Rarity){
   switch(rarity){
     case 'incomum': return 'ring-emerald-400 text-emerald-400';

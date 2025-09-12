@@ -1,0 +1,8 @@
+DIRETRIZES DO PATCH (Aldor Idle)
+
+1) NUNCA substituir arquivos core por placeholders ou versões parciais.
+2) Patch mínimo, compatível e incremental. Não remover funcionalidades existentes.
+3) Persistência: respeitar salva única com dirty flag; não quebrar reidratação.
+4) Imagens apenas em /public/images/**.
+5) Alterações que envolvam inventário, moedas, missões ou personagem passam pelo provider de save/load.
+6) Qualquer mudança que impacte a UX principal deve manter estado e não bloquear o modo loop (preferir toasts a modais bloqueantes).

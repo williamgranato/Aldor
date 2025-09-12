@@ -25,7 +25,7 @@ const defaultState: GameState = {
     statPoints: 0,
     attributes: { strength:1, agility:1, intelligence:1, vitality:1, luck:0 },
     stats: { hp:30, maxHp:30, attack:5, defense:2, crit:0 },
-    stamina: { current:100, max:100, lastRefillDay: Date.now(), lastRegenAt: Date.now() as any },
+    stamina: { current:100, max:100, lastRefillDay: Date.now(), lastRegenAt: Date.now() },
     status: [],
     coins: { gold:0, silver:0, bronze:0, copper:0 },
     inventory: [],
@@ -42,6 +42,7 @@ export function GameProvider({ children }:{children:React.ReactNode}){
   const router = useRouter();
   const pathname = usePathname();
   const [state, setState] = useState<GameState>(defaultState);
+  const [hydrated, setHydrated] = useState(false);
   const dirtyRef = useRef(false);
   function markDirty(){ dirtyRef.current = true; }
 
@@ -54,6 +55,7 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     dirtyRef.current = true;
     router.push('/create-character');
   }
+
   function ensureMemberCard(){
     setState(prev=>{
       if(prev.guild.isMember && prev.guild.memberCard?.rank) return prev;
@@ -125,7 +127,7 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     markDirty();
   }
 
-  function addLootToInventory(drops: {id:string; name:string; icon?:string}[]){
+  function addLootToInventory(drops: {id:string; name:string; icon?:string; rarity?:string}[]){
     if(!drops?.length) return;
     setState(prev=>{
       const inv:any[] = (prev.player.inventory as any[]) || [];
@@ -153,8 +155,10 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     markDirty();
   }
 
+  // Hydrate from localStorage
   useEffect(()=>{ const l = loadSave(); if(l) setState((p:any)=>({ ...p, ...l })); },[]);
 
+  // Dirty flag flush + stamina regen (+1 a cada 5s, com lastRegenAt)
   useEffect(()=>{
     const id = setInterval(()=>{
       if(dirtyRef.current) saveNow(state);
@@ -175,6 +179,7 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     return ()=>{ clearInterval(id); window.removeEventListener('beforeunload', flush); window.removeEventListener('visibilitychange', flush); };
   },[state]);
 
+  // Recalcular stamina máxima quando INT muda
   useEffect(()=>{ 
     setState(prev=>{
       const max = 100 + Math.max(0, Math.floor(prev.player.attributes.intelligence||0))*3;
@@ -184,12 +189,16 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     });
   }, [state.player.attributes.intelligence]);
 
+  // Hydration ready -> habilita guard
+  useEffect(()=>{ setHydrated(true); },[]);
+
+  // Guard de criação de personagem (só após hydration)
   useEffect(()=>{
     const isNew = (!state?.player?.character?.origin) && (!state?.player?.character?.name || state.player.character.name === 'Aventureiro');
-    if(isNew && pathname !== '/create-character'){
+    if(hydrated && isNew && pathname !== '/create-character'){
       router.replace('/create-character');
     }
-  },[state?.player?.character, pathname, router]);
+  },[hydrated, state?.player?.character, pathname, router]);
 
   const ctx: Ctx = {
     state, setState,

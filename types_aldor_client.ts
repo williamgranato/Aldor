@@ -1,14 +1,6 @@
-// types_aldor_client.ts
-export type Rank = 'Sem Guilda' | 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS';
+// types_aldor_client.ts — restaurado com todos os tipos originais + lastRegenAt opcional em Stamina
 
-export type AttributeKey = 'strength' | 'agility' | 'intelligence' | 'vitality' | 'luck';
-
-export type CoinPouch = {
-  gold: number;
-  silver: number;
-  bronze: number;
-  copper: number;
-};
+export type Rank = 'F'|'E'|'D'|'C'|'B'|'A'|'S'|'SS'|'SSS';
 
 export type Character = {
   id: string;
@@ -33,6 +25,14 @@ export type Stamina = {
   current: number;
   max: number;
   lastRefillDay: number; // yyyymmdd numérico ou ms, conforme uso
+  lastRegenAt?: number;  // timestamp opcional para regeneração automática
+};
+
+export type CoinPouch = {
+  gold: number;
+  silver: number;
+  bronze: number;
+  copper: number;
 };
 
 export type ItemType = 'consumable' | 'ingredient' | 'resource' | 'armor' | 'weapon' | 'trinket';
@@ -59,51 +59,39 @@ export type Quest = {
 
 export type PlayerState = {
   id: string;
-  missionAffinity?: Record<string, number>;
-  npcAffinity?: Record<string, number>;
   character: Character;
   guildRank: number;
-  adventurerRank: Rank | string;
+  adventurerRank: string;
   xp: number;
   level: number;
   statPoints: number;
-  attributes: Record<AttributeKey, number>;
+  attributes: Record<string, number>;
   stats: Stats;
   stamina: Stamina;
   status: any[];
   coins: CoinPouch;
   inventory: Item[];
-  skills: Record<string, any>;
+  skills: Record<string,any>;
 };
 
 export type GuildState = {
   isMember: boolean;
-  completedQuests: { id: string; rank: Rank; at: number }[];
+  completedQuests: Quest[];
   activeQuests: Quest[];
-  memberCard?: {
-    name: string;
-    origin: string;
-    role: string;
-    roleKey?: string;
-    race?: string;
-    raceKey?: string;
-    rank: Rank;
-  };
+  memberCard?: any;
 };
 
-export type MarketState = {
-  catalog: any[];
+export type WorldState = {
+  dateMs: number;
+};
+
+export type UIState = {
+  headerStyle: string;
 };
 
 export type GameState = {
-  version: number;
-  createdAt: number;
-  updatedAt: number;
   player: PlayerState;
   guild: GuildState;
-  market: MarketState;
-  world?: any;
-  ui?: { headerStyle: 'legacy' | 'modern' };
+  world: WorldState;
+  ui: UIState;
 };
-
-export type SaveBlob = GameState;
