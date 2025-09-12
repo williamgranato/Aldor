@@ -2,7 +2,7 @@
 import React from 'react';
 import Image from 'next/image';
 
-type Item = { id:string; name:string; type?:string; image?:string };
+type Item = { id:string; name:string; type?:string; image?:string; hp?:number };
 type Equipment = {
   cabeca: Item|null;
   peito: Item|null;
@@ -14,27 +14,28 @@ type Equipment = {
   amuleto: Item|null;
 };
 
-function resolvePlaceholder(item?: Item|null){
-  const t = item?.type;
-  if(t==='arma' || t==='weapon') return '/images/sword.png';
-  if(t==='armadura' || t==='armor') return '/images/armor_leather.png';
-  if(t==='comida' || t==='food') return '/images/food.png';
+function imgOf(item?: Item|null){
+  if(item?.image) return item.image.startsWith('/images') ? item.image : `/images/items/${item.image}`;
   return '/images/items/placeholder.png';
 }
 
-function imgOf(item?: Item|null){
-  if(item?.image) return item.image.startsWith('/images') ? item.image : `/images/items/${item.image}`;
-  return resolvePlaceholder(item);
-}
+const slotBg: Record<string,string> = {
+  cabeca: '/images/slots/helmet.png',
+  peito: '/images/slots/armor.png',
+  mao_principal: '/images/slots/sword.png',
+  mao_secundaria: '/images/slots/shield.png',
+  pernas: '/images/slots/legs.png',
+  botas: '/images/slots/boots.png',
+  anel: '/images/slots/ring.png',
+  amuleto: '/images/slots/amulet.png',
+};
 
 export default function PaperDoll({
   equipment,
-  size=128,
   onDropItem,
   onUnequip,
 }:{
   equipment: Partial<Equipment>,
-  size?: number,
   onDropItem?: (slot:keyof Equipment, payload:any)=>void,
   onUnequip?: (slot:keyof Equipment)=>void,
 }){
@@ -60,7 +61,7 @@ export default function PaperDoll({
         className="relative w-20 h-20 border border-slate-700 rounded-lg bg-slate-900/50 flex items-center justify-center overflow-hidden"
         title={item?.name || label}
       >
-        <Image src={src} alt={label} width={64} height={64} className="object-contain opacity-90" />
+        <Image src={item ? src : slotBg[slot]} alt={label} width={64} height={64} className="object-contain opacity-90" />
         {item && (
           <button
             onClick={()=> onUnequip?.(slot)}
@@ -68,7 +69,6 @@ export default function PaperDoll({
             aria-label={`Remover ${item.name}`}
           >x</button>
         )}
-        {!item && <span className="text-[10px] absolute bottom-1 opacity-60">{label}</span>}
       </div>
     );
   };

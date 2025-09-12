@@ -3,6 +3,7 @@ import React from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import Image from 'next/image';
 import PaperDoll from '@/components/PaperDoll';
+import { Heart, Shield, Sword, Crosshair, Zap, Brain, Star } from 'lucide-react';
 
 const LABELS: Record<string,string> = {
   strength: 'Força',
@@ -27,11 +28,34 @@ function itemImg(item:any){
   return resolvePlaceholder(item);
 }
 
+// soma atributos dos itens equipados
+function getEquipBonuses(equipment:any){
+  const totals:any = {};
+  Object.values(equipment||{}).forEach((item:any)=>{
+    if(!item) return;
+    const bonuses = {
+      hp: item.hp || 0,
+      defense: item.defense || 0,
+      atk: item.atk || 0,
+      crit: item.crit || 0,
+      agi: item.agi || 0,
+      int: item.int || 0,
+      luck: item.luck || 0,
+    };
+    Object.entries(bonuses).forEach(([k,v])=>{
+      totals[k] = (totals[k]||0) + (v as number);
+    });
+  });
+  return totals;
+}
+
 export default function HomePage(){
   const { state, increaseAttribute, equip, unequip } = useGame();
   const player = state.player;
 
   const attrs = Object.entries(player.attributes);
+
+  const bonuses = getEquipBonuses(player.equipment || {});
 
   // drag start for inventory item
   const onDragStart = (it:any)=> (e:React.DragEvent)=>{

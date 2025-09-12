@@ -40,6 +40,15 @@ const defaultState: GameState & { reputation: ReputationEntry[] } = {
   reputation: []
 };
 
+const emptyEquipment = {
+  cabeca:null, peito:null, mao_principal:null, mao_secundaria:null,
+  pernas:null, botas:null, anel:null, amuleto:null
+};
+
+function normalizeEquipment(eq:any){
+  return { ...emptyEquipment, ...(eq||{}) };
+}
+
 const GameContext = createContext<Ctx|null>(null);
 
 export function GameProvider({ children }:{children:React.ReactNode}){
@@ -202,27 +211,29 @@ function equip(slot: keyof typeof state.player.equipment, item: any){
     const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory] : [];
     const idx = inv.findIndex(i=> i.id === item.id);
     if(idx === -1) return prev;
-    const current = (prev.player.equipment as any)[slot] || null;
-    // remove from inventory
+    const equipment = normalizeEquipment(prev.player.equipment);
+    const current = equipment[slot];
     inv.splice(idx,1);
-    // if had equipped, return it to inventory
     if(current){ inv.push(current); }
-    const equipment = { ...prev.player.equipment, [slot]: item };
-    return { ...prev, player: { ...prev.player, inventory: inv, equipment } };
+    const newEquipment = { ...equipment, [slot]: item };
+    return { ...prev, player: { ...prev.player, inventory: inv, equipment: newEquipment } };
   });
   markDirty();
 }
 
+
 function unequip(slot: keyof typeof state.player.equipment){
   setState(prev=>{
-    const current = (prev.player.equipment as any)[slot] || null;
+    const equipment = normalizeEquipment(prev.player.equipment);
+    const current = equipment[slot];
     if(!current) return prev;
     const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory, current] : [current];
-    const equipment = { ...prev.player.equipment, [slot]: null };
-    return { ...prev, player: { ...prev.player, inventory: inv, equipment } };
+    const newEquipment = { ...equipment, [slot]: null };
+    return { ...prev, player: { ...prev.player, inventory: inv, equipment: newEquipment } };
   });
   markDirty();
 }
+
 // === NOVAS FUNÇÕES DE MERCADO ===
   function comprar(item:any, priceCopper:number, merchantId:string){
     setState(prev=>{
@@ -248,7 +259,7 @@ function unequip(slot: keyof typeof state.player.equipment){
   }
 
   // Hydrate from localStorage
-  useEffect(()=>{ const l = loadSave(); if(l) setState((p:any)=>({ ...p, ...l })); },[]);
+  useEffect(()=>{ const l = loadSave(); if(l) setState((p:any)=>({ ...p, ...l, player:{ ...p.player, ...l.player, equipment: normalizeEquipment(l.player?.equipment) } })); },[]);
 
   // Dirty flag flush + stamina regen
   useEffect(()=>{
