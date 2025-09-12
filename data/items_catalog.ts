@@ -200,21 +200,21 @@ export const ITEMS: Item[] = [
   { id: 'amuleto_arcanista', name: 'Amuleto do Arcanista', type: 'joia', slot: 'amuleto', rarity: 'épico', reqLevel: 10, valueCopper: computePriceCopper({ type: 'joia', rarity: 'épico', reqLevel: 10 }), image: 'jewels/amulet_arcane.png', bonuses: { INT: 5, CRIT: 2 } },
 
   // Armas 1M
-  { id: 'espada_aco_1m', name: 'Espada Longa de Aço', type: 'arma', slot: 'mão_principal', rarity: 'incomum', material: 'aço', reqLevel: 6, durability: 100, weight: 8, valueCopper: computePriceCopper({ type:'arma', rarity:'incomum', reqLevel:6, material:'aço' }), atk: 12, crit: 2, sockets: 1, image: 'weapons/sword_steel.png' },
-  { id: 'adaga_mithril', name: 'Adaga de Mithril', type: 'arma', slot: 'mão_principal', rarity: 'raro', material: 'mithril', reqLevel: 10, durability: 90, weight: 3, valueCopper: computePriceCopper({ type:'arma', rarity:'raro', reqLevel:10, material:'mithril' }), atk: 10, crit: 5, bonuses: { AGI: 2 }, sockets: 1, image: 'weapons/dagger_mithril.png' },
-  { id: 'cetro_arcano', name: 'Cetro Arcano', type: 'arma', slot: 'mão_principal', rarity: 'épico', material: 'fibras_arcanas', reqLevel: 12, durability: 80, weight: 4, valueCopper: computePriceCopper({ type:'arma', rarity:'épico', reqLevel:12, material:'fibras_arcanas' }), atk: 9, crit: 3, bonuses: { INT: 4 }, sockets: 2, image: 'weapons/scepter_arcane.png' },
+  { id: 'espada_aco_1m', name: 'Espada Longa de Aço', type: 'arma', slot: 'mão_principal', rarity: 'incomum', material: 'aço', reqLevel: 6, durability: 100, weight: 8, valueCopper: computePriceCopper({ type:'arma', rarity:'incomum', reqLevel:6, material:'aço' , image: 'sword.png' }), atk: 12, crit: 2, sockets: 1, image: 'weapons/sword_steel.png' },
+  { id: 'adaga_mithril', name: 'Adaga de Mithril', type: 'arma', slot: 'mão_principal', rarity: 'raro', material: 'mithril', reqLevel: 10, durability: 90, weight: 3, valueCopper: computePriceCopper({ type:'arma', rarity:'raro', reqLevel:10, material:'mithril' , image: 'sword.png' }), atk: 10, crit: 5, bonuses: { AGI: 2 }, sockets: 1, image: 'weapons/dagger_mithril.png' },
+  { id: 'cetro_arcano', name: 'Cetro Arcano', type: 'arma', slot: 'mão_principal', rarity: 'épico', material: 'fibras_arcanas', reqLevel: 12, durability: 80, weight: 4, valueCopper: computePriceCopper({ type:'arma', rarity:'épico', reqLevel:12, material:'fibras_arcanas' , image: 'sword.png' }), atk: 9, crit: 3, bonuses: { INT: 4 }, sockets: 2, image: 'weapons/scepter_arcane.png' },
 
   // Armas 2M (bloqueiam escudo)
-  { id: 'lanca_adamantita_2m', name: 'Lança de Adamantita', type: 'arma', slot: 'mão_principal', rarity: 'épico', material: 'adamantita', reqLevel: 16, durability: 110, weight: 12, valueCopper: computePriceCopper({ type:'arma', rarity:'épico', reqLevel:16, material:'adamantita' }), atk: 20, crit: 4, sockets: 2, image: 'weapons/spear_adamantite.png' },
-  { id: 'arco_composto', name: 'Arco Composto', type: 'arma', slot: 'mão_principal', rarity: 'raro', material: 'madeira_nobre', reqLevel: 9, durability: 85, weight: 6, valueCopper: computePriceCopper({ type:'arma', rarity:'raro', reqLevel:9, material:'madeira_nobre' }), atk: 13, crit: 3, bonuses: { AGI: 2 }, sockets: 1, image: 'weapons/bow_composite.png' },
+  { id: 'lanca_adamantita_2m', name: 'Lança de Adamantita', type: 'arma', slot: 'mão_principal', rarity: 'épico', material: 'adamantita', reqLevel: 16, durability: 110, weight: 12, valueCopper: computePriceCopper({ type:'arma', rarity:'épico', reqLevel:16, material:'adamantita' , image: 'sword.png' }), atk: 20, crit: 4, sockets: 2, image: 'weapons/spear_adamantite.png' },
+  { id: 'arco_composto', name: 'Arco Composto', type: 'arma', slot: 'mão_principal', rarity: 'raro', material: 'madeira_nobre', reqLevel: 9, durability: 85, weight: 6, valueCopper: computePriceCopper({ type:'arma', rarity:'raro', reqLevel:9, material:'madeira_nobre' , image: 'sword.png' }), atk: 13, crit: 3, bonuses: { AGI: 2 }, sockets: 1, image: 'weapons/bow_composite.png' },
 
   // Escudo (mão secundária)
-  { id: 'escudo_placas', name: 'Escudo de Placas', type: 'armadura', slot: 'mão_secundária', rarity: 'raro', material: 'placas', reqLevel: 10, durability: 120, weight: 14, valueCopper: computePriceCopper({ type:'armadura', rarity:'raro', reqLevel:10, material:'placas' }), def: 14, bonuses: { DODGE: -1 }, sockets: 1, image: 'armors/shield_plate.png' },
+  { id: 'escudo_placas', name: 'Escudo de Placas', type: 'armadura', slot: 'mão_secundária', rarity: 'raro', material: 'placas', reqLevel: 10, durability: 120, weight: 14, valueCopper: computePriceCopper({ type:'armadura', rarity:'raro', reqLevel:10, material:'placas' , image: 'armor_leather.png' }), def: 14, bonuses: { DODGE: -1 }, sockets: 1, image: 'armors/shield_plate.png' },
 
   // Armaduras (leve/média/pesada)
-  { id: 'capuz_couro', name: 'Capuz de Couro', type: 'armadura', slot: 'cabeça', rarity: 'comum', material: 'couro', reqLevel: 1, durability: 60, weight: 2, valueCopper: computePriceCopper({ type:'armadura', rarity:'comum', reqLevel:1, material:'couro' }), def: 3, image: 'armors/leather_hood.png' },
-  { id: 'peitoral_escamas', name: 'Peitoral de Escamas', type: 'armadura', slot: 'peito', rarity: 'incomum', material: 'escamas', reqLevel: 6, durability: 100, weight: 10, valueCopper: computePriceCopper({ type:'armadura', rarity:'incomum', reqLevel:6, material:'escamas' }), def: 10, sockets: 1, image: 'armors/scale_chest.png' },
-  { id: 'armadura_placas', name: 'Armadura de Placas', type: 'armadura', slot: 'peito', rarity: 'épico', material: 'placas', reqLevel: 14, durability: 150, weight: 18, valueCopper: computePriceCopper({ type:'armadura', rarity:'épico', reqLevel:14, material:'placas' }), def: 18, bonuses: { DODGE: -2 }, sockets: 2, setId: 'guardiao_placas', image: 'armors/plate_chest.png' },
+  { id: 'capuz_couro', name: 'Capuz de Couro', type: 'armadura', slot: 'cabeça', rarity: 'comum', material: 'couro', reqLevel: 1, durability: 60, weight: 2, valueCopper: computePriceCopper({ type:'armadura', rarity:'comum', reqLevel:1, material:'couro' , image: 'armor_leather.png' }), def: 3, image: 'armors/leather_hood.png' },
+  { id: 'peitoral_escamas', name: 'Peitoral de Escamas', type: 'armadura', slot: 'peito', rarity: 'incomum', material: 'escamas', reqLevel: 6, durability: 100, weight: 10, valueCopper: computePriceCopper({ type:'armadura', rarity:'incomum', reqLevel:6, material:'escamas' , image: 'armor_leather.png' }), def: 10, sockets: 1, image: 'armors/scale_chest.png' },
+  { id: 'armadura_placas', name: 'Armadura de Placas', type: 'armadura', slot: 'peito', rarity: 'épico', material: 'placas', reqLevel: 14, durability: 150, weight: 18, valueCopper: computePriceCopper({ type:'armadura', rarity:'épico', reqLevel:14, material:'placas' , image: 'armor_leather.png' }), def: 18, bonuses: { DODGE: -2 }, sockets: 2, setId: 'guardiao_placas', image: 'armors/plate_chest.png' },
 
   // Acessórios
   { id: 'manto_cinzento', name: 'Manto Cinzento', type: 'acessório', slot: 'manto', rarity: 'incomum', reqLevel: 4, valueCopper: computePriceCopper({ type:'acessório', rarity:'incomum', reqLevel:4 }), image: 'armors/cloak_gray.png', bonuses: { DODGE: 1 } },
@@ -389,7 +389,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 429,
   atk: 7,
   crit: 5,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_1',
@@ -404,7 +404,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 247,
   atk: 37,
   crit: 4,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_2',
@@ -419,7 +419,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 156,
   atk: 16,
   crit: 0,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_3',
@@ -434,7 +434,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 494,
   atk: 24,
   crit: 4,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_4',
@@ -449,7 +449,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 134,
   atk: 12,
   crit: 6,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_5',
@@ -464,7 +464,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 225,
   atk: 38,
   crit: 1,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_6',
@@ -479,7 +479,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 154,
   atk: 13,
   crit: 8,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_7',
@@ -494,7 +494,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 244,
   atk: 33,
   crit: 3,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_8',
@@ -509,7 +509,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 270,
   atk: 6,
   crit: 10,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_9',
@@ -524,7 +524,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 352,
   atk: 24,
   crit: 9,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_10',
@@ -539,7 +539,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 471,
   atk: 6,
   crit: 8,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_11',
@@ -554,7 +554,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 440,
   atk: 35,
   crit: 10,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_12',
@@ -569,7 +569,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 295,
   atk: 24,
   crit: 5,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_13',
@@ -584,7 +584,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 200,
   atk: 10,
   crit: 0,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_14',
@@ -599,7 +599,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 142,
   atk: 15,
   crit: 1,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_15',
@@ -614,7 +614,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 303,
   atk: 10,
   crit: 5,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_16',
@@ -629,7 +629,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 475,
   atk: 38,
   crit: 5,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_17',
@@ -644,7 +644,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 368,
   atk: 11,
   crit: 1,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_18',
@@ -659,7 +659,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 425,
   atk: 24,
   crit: 10,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_19',
@@ -674,7 +674,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 74,
   atk: 13,
   crit: 10,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_20',
@@ -689,7 +689,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 307,
   atk: 17,
   crit: 10,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_21',
@@ -704,7 +704,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 194,
   atk: 16,
   crit: 0,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_22',
@@ -719,7 +719,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 227,
   atk: 35,
   crit: 10,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_23',
@@ -734,7 +734,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 119,
   atk: 5,
   crit: 1,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_24',
@@ -749,7 +749,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 285,
   atk: 23,
   crit: 8,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_25',
@@ -764,7 +764,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 151,
   atk: 9,
   crit: 8,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_26',
@@ -779,7 +779,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 369,
   atk: 12,
   crit: 9,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_27',
@@ -794,7 +794,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 51,
   atk: 40,
   crit: 4,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_28',
@@ -809,7 +809,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 264,
   atk: 6,
   crit: 2,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_29',
@@ -824,7 +824,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 454,
   atk: 16,
   crit: 2,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_30',
@@ -839,7 +839,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 439,
   atk: 13,
   crit: 9,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_31',
@@ -854,7 +854,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 316,
   atk: 11,
   crit: 1,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_32',
@@ -869,7 +869,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 180,
   atk: 37,
   crit: 7,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_33',
@@ -884,7 +884,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 235,
   atk: 26,
   crit: 7,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_34',
@@ -899,7 +899,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 332,
   atk: 25,
   crit: 10,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_35',
@@ -914,7 +914,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 202,
   atk: 23,
   crit: 9,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_36',
@@ -929,7 +929,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 306,
   atk: 5,
   crit: 4,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_37',
@@ -944,7 +944,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 230,
   atk: 36,
   crit: 7,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_38',
@@ -959,7 +959,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 178,
   atk: 7,
   crit: 1,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_39',
@@ -974,7 +974,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 303,
   atk: 23,
   crit: 0,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_40',
@@ -989,7 +989,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 195,
   atk: 39,
   crit: 9,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_41',
@@ -1004,7 +1004,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 443,
   atk: 5,
   crit: 10,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_42',
@@ -1019,7 +1019,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 398,
   atk: 33,
   crit: 1,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_43',
@@ -1034,7 +1034,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 207,
   atk: 29,
   crit: 4,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_44',
@@ -1049,7 +1049,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 381,
   atk: 40,
   crit: 1,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_45',
@@ -1064,7 +1064,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 175,
   atk: 25,
   crit: 9,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_46',
@@ -1079,7 +1079,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 326,
   atk: 10,
   crit: 7,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_47',
@@ -1094,7 +1094,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 334,
   atk: 23,
   crit: 10,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_48',
@@ -1109,7 +1109,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 343,
   atk: 36,
   crit: 7,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_49',
@@ -1124,7 +1124,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 228,
   atk: 10,
   crit: 2,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_50',
@@ -1139,7 +1139,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 441,
   atk: 34,
   crit: 0,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_51',
@@ -1154,7 +1154,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 273,
   atk: 10,
   crit: 0,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_52',
@@ -1169,7 +1169,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 130,
   atk: 19,
   crit: 3,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_53',
@@ -1184,7 +1184,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 470,
   atk: 29,
   crit: 5,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_54',
@@ -1199,7 +1199,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 395,
   atk: 13,
   crit: 7,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_55',
@@ -1214,7 +1214,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 216,
   atk: 12,
   crit: 7,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_56',
@@ -1229,7 +1229,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 138,
   atk: 6,
   crit: 9,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_57',
@@ -1244,7 +1244,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 402,
   atk: 31,
   crit: 3,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_58',
@@ -1259,7 +1259,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 261,
   atk: 26,
   crit: 0,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_59',
@@ -1274,7 +1274,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 493,
   atk: 6,
   crit: 2,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_60',
@@ -1289,7 +1289,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 82,
   atk: 8,
   crit: 3,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_61',
@@ -1304,7 +1304,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 250,
   atk: 38,
   crit: 6,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_62',
@@ -1319,7 +1319,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 329,
   atk: 6,
   crit: 7,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_63',
@@ -1334,7 +1334,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 276,
   atk: 36,
   crit: 5,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_64',
@@ -1349,7 +1349,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 306,
   atk: 22,
   crit: 4,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_65',
@@ -1364,7 +1364,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 198,
   atk: 23,
   crit: 3,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_66',
@@ -1379,7 +1379,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 310,
   atk: 11,
   crit: 8,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_67',
@@ -1394,7 +1394,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 332,
   atk: 8,
   crit: 1,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_68',
@@ -1409,7 +1409,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 345,
   atk: 36,
   crit: 5,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'arma_69',
@@ -1424,7 +1424,7 @@ export const EXTRA_ITEMS: Item[] = [
   valueCopper: 143,
   atk: 21,
   crit: 2,
-  image: '/images/items/weapons/placeholder.png'
+  image: 'sword.png'
 },
 {
   id: 'armadura_0',
@@ -1438,7 +1438,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 5,
   valueCopper: 443,
   def: 16,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_1',
@@ -1452,7 +1452,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 11,
   valueCopper: 342,
   def: 16,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_2',
@@ -1466,7 +1466,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 20,
   valueCopper: 314,
   def: 35,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_3',
@@ -1480,7 +1480,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 9,
   valueCopper: 496,
   def: 19,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_4',
@@ -1494,7 +1494,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 16,
   valueCopper: 135,
   def: 8,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_5',
@@ -1508,7 +1508,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 5,
   valueCopper: 129,
   def: 34,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_6',
@@ -1522,7 +1522,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 11,
   valueCopper: 193,
   def: 13,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_7',
@@ -1536,7 +1536,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 11,
   valueCopper: 225,
   def: 13,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_8',
@@ -1550,7 +1550,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 13,
   valueCopper: 74,
   def: 16,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_9',
@@ -1564,7 +1564,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 18,
   valueCopper: 434,
   def: 6,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_10',
@@ -1578,7 +1578,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 12,
   valueCopper: 60,
   def: 26,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_11',
@@ -1592,7 +1592,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 17,
   valueCopper: 63,
   def: 7,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_12',
@@ -1606,7 +1606,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 19,
   valueCopper: 387,
   def: 18,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_13',
@@ -1620,7 +1620,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 9,
   valueCopper: 146,
   def: 21,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_14',
@@ -1634,7 +1634,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 20,
   valueCopper: 336,
   def: 8,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_15',
@@ -1648,7 +1648,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 19,
   valueCopper: 468,
   def: 19,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_16',
@@ -1662,7 +1662,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 12,
   valueCopper: 222,
   def: 26,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_17',
@@ -1676,7 +1676,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 6,
   valueCopper: 471,
   def: 15,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_18',
@@ -1690,7 +1690,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 20,
   valueCopper: 397,
   def: 25,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_19',
@@ -1704,7 +1704,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 5,
   valueCopper: 187,
   def: 35,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_20',
@@ -1718,7 +1718,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 11,
   valueCopper: 108,
   def: 26,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_21',
@@ -1732,7 +1732,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 15,
   valueCopper: 282,
   def: 23,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_22',
@@ -1746,7 +1746,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 17,
   valueCopper: 453,
   def: 22,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_23',
@@ -1760,7 +1760,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 12,
   valueCopper: 95,
   def: 8,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_24',
@@ -1774,7 +1774,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 10,
   valueCopper: 427,
   def: 32,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_25',
@@ -1788,7 +1788,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 20,
   valueCopper: 481,
   def: 16,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_26',
@@ -1802,7 +1802,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 13,
   valueCopper: 462,
   def: 32,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_27',
@@ -1816,7 +1816,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 15,
   valueCopper: 151,
   def: 5,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_28',
@@ -1830,7 +1830,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 19,
   valueCopper: 464,
   def: 12,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_29',
@@ -1844,7 +1844,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 13,
   valueCopper: 343,
   def: 16,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_30',
@@ -1858,7 +1858,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 8,
   valueCopper: 241,
   def: 28,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_31',
@@ -1872,7 +1872,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 8,
   valueCopper: 86,
   def: 10,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_32',
@@ -1886,7 +1886,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 17,
   valueCopper: 279,
   def: 25,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_33',
@@ -1900,7 +1900,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 20,
   valueCopper: 273,
   def: 11,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_34',
@@ -1914,7 +1914,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 13,
   valueCopper: 462,
   def: 12,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_35',
@@ -1928,7 +1928,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 13,
   valueCopper: 428,
   def: 12,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_36',
@@ -1942,7 +1942,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 14,
   valueCopper: 367,
   def: 28,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_37',
@@ -1956,7 +1956,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 19,
   valueCopper: 304,
   def: 7,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_38',
@@ -1970,7 +1970,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 15,
   valueCopper: 94,
   def: 31,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_39',
@@ -1984,7 +1984,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 20,
   valueCopper: 268,
   def: 16,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_40',
@@ -1998,7 +1998,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 14,
   valueCopper: 300,
   def: 16,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_41',
@@ -2012,7 +2012,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 6,
   valueCopper: 465,
   def: 6,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_42',
@@ -2026,7 +2026,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 9,
   valueCopper: 261,
   def: 30,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_43',
@@ -2040,7 +2040,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 16,
   valueCopper: 370,
   def: 9,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_44',
@@ -2054,7 +2054,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 7,
   valueCopper: 297,
   def: 15,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_45',
@@ -2068,7 +2068,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 11,
   valueCopper: 456,
   def: 31,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_46',
@@ -2082,7 +2082,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 17,
   valueCopper: 271,
   def: 33,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_47',
@@ -2096,7 +2096,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 9,
   valueCopper: 299,
   def: 23,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_48',
@@ -2110,7 +2110,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 7,
   valueCopper: 173,
   def: 23,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_49',
@@ -2124,7 +2124,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 15,
   valueCopper: 88,
   def: 7,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_50',
@@ -2138,7 +2138,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 14,
   valueCopper: 402,
   def: 25,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_51',
@@ -2152,7 +2152,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 7,
   valueCopper: 222,
   def: 24,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_52',
@@ -2166,7 +2166,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 9,
   valueCopper: 64,
   def: 9,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_53',
@@ -2180,7 +2180,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 5,
   valueCopper: 447,
   def: 8,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_54',
@@ -2194,7 +2194,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 13,
   valueCopper: 316,
   def: 19,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_55',
@@ -2208,7 +2208,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 6,
   valueCopper: 434,
   def: 14,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_56',
@@ -2222,7 +2222,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 12,
   valueCopper: 450,
   def: 34,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_57',
@@ -2236,7 +2236,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 5,
   valueCopper: 215,
   def: 33,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_58',
@@ -2250,7 +2250,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 12,
   valueCopper: 70,
   def: 9,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_59',
@@ -2264,7 +2264,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 7,
   valueCopper: 393,
   def: 29,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_60',
@@ -2278,7 +2278,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 15,
   valueCopper: 129,
   def: 15,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_61',
@@ -2292,7 +2292,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 10,
   valueCopper: 166,
   def: 5,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_62',
@@ -2306,7 +2306,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 12,
   valueCopper: 163,
   def: 26,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_63',
@@ -2320,7 +2320,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 18,
   valueCopper: 368,
   def: 10,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_64',
@@ -2334,7 +2334,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 16,
   valueCopper: 167,
   def: 22,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_65',
@@ -2348,7 +2348,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 9,
   valueCopper: 146,
   def: 31,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_66',
@@ -2362,7 +2362,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 5,
   valueCopper: 201,
   def: 20,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_67',
@@ -2376,7 +2376,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 20,
   valueCopper: 97,
   def: 25,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_68',
@@ -2390,7 +2390,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 20,
   valueCopper: 237,
   def: 24,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'armadura_69',
@@ -2404,7 +2404,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 16,
   valueCopper: 133,
   def: 9,
-  image: '/images/items/armors/placeholder.png'
+  image: 'armor_leather.png'
 },
 {
   id: 'comida_0',
@@ -2415,7 +2415,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 71,
   bonuses: { HP: 78 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_1',
@@ -2426,7 +2426,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 44,
   bonuses: { HP: 29 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_2',
@@ -2437,7 +2437,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 95,
   bonuses: { HP: 173 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_3',
@@ -2448,7 +2448,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 64,
   bonuses: { HP: 196 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_4',
@@ -2459,7 +2459,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 32,
   bonuses: { HP: 159 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_5',
@@ -2470,7 +2470,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 92,
   bonuses: { HP: 196 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_6',
@@ -2481,7 +2481,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 13,
   bonuses: { HP: 140 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_7',
@@ -2492,7 +2492,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 87,
   bonuses: { HP: 88 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_8',
@@ -2503,7 +2503,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 64,
   bonuses: { HP: 74 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_9',
@@ -2514,7 +2514,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 93,
   bonuses: { HP: 113 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_10',
@@ -2525,7 +2525,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 65,
   bonuses: { HP: 51 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_11',
@@ -2536,7 +2536,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 37,
   bonuses: { HP: 154 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_12',
@@ -2547,7 +2547,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 63,
   bonuses: { HP: 115 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_13',
@@ -2558,7 +2558,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 41,
   bonuses: { HP: 128 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_14',
@@ -2569,7 +2569,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 87,
   bonuses: { HP: 178 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_15',
@@ -2580,7 +2580,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 23,
   bonuses: { HP: 97 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_16',
@@ -2591,7 +2591,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 95,
   bonuses: { HP: 84 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_17',
@@ -2602,7 +2602,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 97,
   bonuses: { HP: 155 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_18',
@@ -2613,7 +2613,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 38,
   bonuses: { HP: 141 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_19',
@@ -2624,7 +2624,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 49,
   bonuses: { HP: 79 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_20',
@@ -2635,7 +2635,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 70,
   bonuses: { HP: 170 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_21',
@@ -2646,7 +2646,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 46,
   bonuses: { HP: 135 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_22',
@@ -2657,7 +2657,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 64,
   bonuses: { HP: 191 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_23',
@@ -2668,7 +2668,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 93,
   bonuses: { HP: 86 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_24',
@@ -2679,7 +2679,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 62,
   bonuses: { HP: 180 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_25',
@@ -2690,7 +2690,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 84,
   bonuses: { HP: 78 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_26',
@@ -2701,7 +2701,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 67,
   bonuses: { HP: 43 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_27',
@@ -2712,7 +2712,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 88,
   bonuses: { HP: 198 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_28',
@@ -2723,7 +2723,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 47,
   bonuses: { HP: 34 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_29',
@@ -2734,7 +2734,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 82,
   bonuses: { HP: 43 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_30',
@@ -2745,7 +2745,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 70,
   bonuses: { HP: 95 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_31',
@@ -2756,7 +2756,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 77,
   bonuses: { HP: 117 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_32',
@@ -2767,7 +2767,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 15,
   bonuses: { HP: 174 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_33',
@@ -2778,7 +2778,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 24,
   bonuses: { HP: 127 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_34',
@@ -2789,7 +2789,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 15,
   bonuses: { HP: 125 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_35',
@@ -2800,7 +2800,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 60,
   bonuses: { HP: 133 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_36',
@@ -2811,7 +2811,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 70,
   bonuses: { HP: 152 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_37',
@@ -2822,7 +2822,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 22,
   bonuses: { HP: 36 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_38',
@@ -2833,7 +2833,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 68,
   bonuses: { HP: 106 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_39',
@@ -2844,7 +2844,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 88,
   bonuses: { HP: 180 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_40',
@@ -2855,7 +2855,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 14,
   bonuses: { HP: 64 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_41',
@@ -2866,7 +2866,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 67,
   bonuses: { HP: 105 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_42',
@@ -2877,7 +2877,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 67,
   bonuses: { HP: 55 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_43',
@@ -2888,7 +2888,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 58,
   bonuses: { HP: 50 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_44',
@@ -2899,7 +2899,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 76,
   bonuses: { HP: 82 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_45',
@@ -2910,7 +2910,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 23,
   bonuses: { HP: 43 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_46',
@@ -2921,7 +2921,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 47,
   bonuses: { HP: 181 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_47',
@@ -2932,7 +2932,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 62,
   bonuses: { HP: 86 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_48',
@@ -2943,7 +2943,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 82,
   bonuses: { HP: 33 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_49',
@@ -2954,7 +2954,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 95,
   bonuses: { HP: 162 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_50',
@@ -2965,7 +2965,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 8,
   bonuses: { HP: 68 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_51',
@@ -2976,7 +2976,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 44,
   bonuses: { HP: 190 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_52',
@@ -2987,7 +2987,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 84,
   bonuses: { HP: 136 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_53',
@@ -2998,7 +2998,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 78,
   bonuses: { HP: 58 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_54',
@@ -3009,7 +3009,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 98,
   bonuses: { HP: 96 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_55',
@@ -3020,7 +3020,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 74,
   bonuses: { HP: 99 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_56',
@@ -3031,7 +3031,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 15,
   bonuses: { HP: 75 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_57',
@@ -3042,7 +3042,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 87,
   bonuses: { HP: 38 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_58',
@@ -3053,7 +3053,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 15,
   bonuses: { HP: 199 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 },
 {
   id: 'comida_59',
@@ -3064,7 +3064,7 @@ export const EXTRA_ITEMS: Item[] = [
   weight: 1,
   valueCopper: 22,
   bonuses: { HP: 140 },
-  image: 'Banquete Medieval Delicioso.png'
+  image: '/images/items/foods/placeholder.png'
 }
 ];
 

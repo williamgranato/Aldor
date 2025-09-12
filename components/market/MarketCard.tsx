@@ -3,8 +3,13 @@ import React from 'react';
 import Image from 'next/image';
 import type { GeneratedMarketItem } from '@/types/market';
 import { PriceRow } from '@/utils/priceDisplay';
-import itemsCatalog from '@/data/items_catalog';
+import * as itemsData from '@/data/items_catalog';
 import { getItemImagePath } from '@/utils/images';
+
+const itemsCatalog: any[] =
+  (itemsData as any).default ??
+  (Array.isArray(itemsData) ? itemsData : Object.values(itemsData).find(v => Array.isArray(v))) ??
+  [];
 
 type Props = {
   item: GeneratedMarketItem;
@@ -22,8 +27,10 @@ const rarityRing: Record<string, string> = {
 };
 
 function resolveImage(item: GeneratedMarketItem): string {
-  if (item.image) return getItemImagePath(item.image);
-  const fromCatalog: any = (itemsCatalog as any[]).find(it => it.id === item.id);
+  if (item.image && !item.image.includes('placeholder')) {
+    return getItemImagePath(item.image);
+  }
+  const fromCatalog: any = itemsCatalog.find(it => it.id === item.id);
   if (fromCatalog?.image) return getItemImagePath(fromCatalog.image);
   return '/images/items/placeholder.png';
 }

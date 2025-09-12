@@ -175,6 +175,24 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     markDirty();
   }
 
+
+
+// === NOVA FUNÇÃO: DISTRIBUIR ATRIBUTOS ===
+function increaseAttribute(attr: keyof typeof state.player.attributes){
+  setState(prev => {
+    if(prev.player.statPoints <= 0) return prev;
+    if(!(attr in prev.player.attributes)) return prev;
+    return {
+      ...prev,
+      player: {
+        ...prev.player,
+        attributes: { ...prev.player.attributes, [attr]: (prev.player.attributes as any)[attr] + 1 },
+        statPoints: prev.player.statPoints - 1
+      }
+    };
+  });
+  markDirty();
+}
   // === NOVAS FUNÇÕES DE MERCADO ===
   function comprar(item:any, priceCopper:number, merchantId:string){
     setState(prev=>{
@@ -249,7 +267,7 @@ export function GameProvider({ children }:{children:React.ReactNode}){
     giveXP, giveCoins, spendStamina, recoverStamina, changeHP,
     ensureMemberCard, completeGuildMission, addLootToInventory,
     resetSave,
-    comprar, reputationAdd
+    comprar, reputationAdd, increaseAttribute
   };
 
   return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;
