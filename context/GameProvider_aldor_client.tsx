@@ -357,19 +357,3 @@ export function useGame(){
 }
 
 
-// added by patch: useItem (consume consumables)
-
-
-// HP regeneration loop
-if(typeof window!=='undefined'){
-  setInterval(()=>{
-    setState(prev=>{
-      const stats=prev.player.stats||{};
-      const hp=stats.hp||0; const maxHp=stats.maxHp||100;
-      if(hp<maxHp){
-        return { ...prev, player:{ ...prev.player, stats:{ ...stats, hp: Math.min(maxHp,hp+2), maxHp } } };
-      }
-      return prev;
-    });
-  },3000);
-}

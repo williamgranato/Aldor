@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState } from 'react';
 
-type Toast = { id:number; title?:string; message:string; type:'success'|'error'|'warning'|'info'; ttl?:number };
+type Toast = { id:number; title?:string; message:string; type:'success'|'error'|'warning'|'info'; ttl?:number; icon?:string };
 
 const ToastContext = createContext<{ add:(t:Omit<Toast,'id'>)=>void }|null>(null);
 
@@ -20,6 +20,7 @@ export function ToastProvider({children}:{children:React.ReactNode}){
         {toasts.map(t=>(
           <div key={t.id} className={`px-4 py-2 rounded shadow-md text-white max-w-sm w-full text-center ${t.type==='success'?'bg-green-600':t.type==='error'?'bg-red-600':t.type==='warning'?'bg-yellow-600':'bg-blue-600'}`}>
             {t.title? <div className="font-bold">{t.title}</div>:null}
+            {t.icon? <img src={t.icon} alt="toast" className="w-8 h-8 object-contain"/>:null}
             <div>{t.message}</div>
           </div>
         ))}
