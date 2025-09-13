@@ -197,6 +197,7 @@ function useItem(item:any){
 
   
   function addLootToInventory(drops: {id:string; name:string; image?:string; icon?:string; rarity?:string; qty?:number}[]){
+    // patched: stackable support + uid generation
     if(!drops?.length) return;
     setState(prev=>{
       const inv:any[] = Array.isArray(prev.player.inventory) ? [...prev.player.inventory] : [];
@@ -357,3 +358,8 @@ export function useGame(){
 }
 
 
+
+// helper uid
+function makeUid(){
+  return String(Date.now()) + String(Math.floor(Math.random()*100000));
+}

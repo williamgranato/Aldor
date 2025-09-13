@@ -1,0 +1,44 @@
+PATCH – Coleta (Floresta & Minas)
+
+Arquivos incluídos:
+- data/gathering_catalog.ts
+  * Lista de recursos (wood/ore) com nível mínimo, custo de stamina, tempo, quantidade e chance de bônus.
+- data/gathering_utils.ts
+  * Persistência simples (localStorage) das skills de Coleta: woodcutting e mining, com progressão.
+- app/coleta/page.tsx
+  * Página “Coleta” pronta: cards por recurso, progresso, gasta stamina (usa ctx.spendStamina) e entrega itens (ctx.addLootToInventory).
+
+Integração mínima necessária no projeto:
+
+1) Rotas/Links
+   * Adicione um link para “/coleta” no seu menu ou na home.
+
+2) GameProvider (context/GameProvider_aldor_client.tsx)
+   * Garanta que o contexto exponha:
+       addLootToInventory(items: {id:string;quantity:number}[]): void
+       spendStamina(n: number): boolean
+       giveXP(n: number): void
+     > A página chama exatamente esses nomes.
+   * Stacks: para materiais/consumíveis, some quantity até MAX_STACK = 100.
+     Para equipamentos/joias, NÃO stackar (cada entrada tem uid).
+
+3) items_catalog.ts
+   * Tenha os ids usados pelos recursos:
+       - softwood_log, hardwood_plank, oak_plank
+       - copper_ore, iron_ore, silver_ore, steel_ingot, gold_ore, mithril_ore
+       - tree_resin, rare_bark, mana_shard (itens bônus)
+   * Garanta o campo image coerente com /public/images/items/materials/*.png
+
+4) Imagens
+   * Coloque os PNGs em /public/images/items/materials/
+     Exemplos esperados:
+       softwood_log.png, hardwood.png, oak_plank.png,
+       copper_ore.png, iron_ore.png, silver_ore.png,
+       steel_ingot.png, gold_ore.png, mithril_ore.png,
+       tree_resin.png, rare_bark.png, mana_shard.png
+
+Observações:
+- Não removemos nada do seu provider. Apenas consuma as funções expostas.
+- Skills são salvas por localStorage no cliente (pode migrar para seu save depois).
+- A progressão por nível está nos reqLevel dos recursos (1-5 madeiras, 6-20 minérios comuns, 21-30 ligas/raros).
+- Você pode ajustar tempos e custos direto no gathering_catalog.ts.

@@ -22,7 +22,13 @@ function resolvePlaceholder(item:any){
 }
 
 function itemImg(it:any){
-  return it?.image || resolvePlaceholder(it);
+  if(!it) return '/images/items/placeholder.png';
+  let img = it.image || resolvePlaceholder(it);
+  if(it.type === 'material'){
+    const fname = (img||'').split('/').pop();
+    img = `/images/items/materials/${fname}`;
+  }
+  return img;
 }
 
 // soma atributos dos itens equipados
