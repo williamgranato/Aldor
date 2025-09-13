@@ -327,8 +327,68 @@ function useItem(item:any){
   markDirty();
 }
 
-  const ctx: Ctx = { touch: ()=>markDirty(),
-    state, setState,
+// === Dispatcher simples ===
+const gameDispatch = (action: any) => {
+  switch (action.type) {
+    case 'START_MISSION':
+  setState(prev => {
+    const mission = { ...action.payload, duration: action.payload.duration || 10 };
+    return {
+      ...prev,
+      player: {
+        ...prev.player,
+        status: [
+          {
+            type: 'mission',
+            mission,
+            startedAt: Date.now(),
+          },
+        ],
+      },
+    };
+  });
+  markDirty();
+  break;
+
+      setState(prev => ({
+        ...prev,
+        player: {
+          ...prev.player,
+          status: [
+            {
+              type: 'mission',
+              mission: action.payload,
+              startedAt: Date.now(),
+            },
+          ],
+        },
+      }));
+      markDirty();
+      break;
+    case 'COMPLETE_MISSION':
+      setState(prev => {
+        const mission = action.payload.mission;
+        const rewards = mission.rewards || {};
+        return {
+          ...prev,
+          player: {
+            ...prev.player,
+            xp: prev.player.xp + (rewards.xp || 0),
+            coins: {
+              ...prev.player.coins,
+              copper: prev.player.coins.copper + (rewards.coins?.copper || 0),
+            },
+            status: prev.player.status.filter((s: any) => s.type !== 'mission'),
+          },
+        };
+      });
+      markDirty();
+      break;
+  }
+};
+const ctx: Ctx = { touch: ()=>markDirty(),
+    state,
+    dispatch: gameDispatch, setState,
     giveXP, giveCoins, spendStamina, recoverStamina, changeHP,
     ensureMemberCard, completeGuildMission, addLootToInventory,
     resetSave

@@ -4,11 +4,12 @@ import { ScrollText, Award, Users, Star, Zap, Shield, CheckCircle2, XCircle } fr
 import { motion } from 'framer-motion';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import MissionList from '@/components/guild/MissionList';
+import { getGuildMissions } from '@/data/missoes';
 import { useToasts } from '@/components/ToastProvider';
 
 type Rank = 'F'|'E'|'D'|'C'|'B'|'A'|'S'|'SS'|'SSS';
 const RANKS: Rank[] = ['F','E','D','C','B','A','S','SS','SSS'];
-const RANK_REQ: Record<Rank,number> = {F:10,E:20,D:40,C:80,B:160,A:320,S:640,SS:1280,SSS:Infinity as any};
+const RANK_REQ: Record<Rank,number> = {F:10,E:20,D:40,C:80,B:160,A:320,S:640,SS:1280,SSS:2000 as any};
 
 const REPUTATION_TITLES = [
   'Forasteiro','Conhecido','Aliado','Companheiro','Protetor da Vila',

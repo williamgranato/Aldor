@@ -3,7 +3,8 @@ import React from 'react';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import Image from 'next/image';
 import PaperDoll from '@/components/PaperDoll';
-import { Heart, Shield, Sword, Crosshair, Zap, Brain, Star, Dumbbell, Sparkles } from 'lucide-react';
+import InventoryPanel from '@/components/InventoryPanel';
+import { Heart, Shield, Sword, Crosshair, Zap, Brain, Star, Dumbbell } from 'lucide-react';
 
 const LABELS: Record<string,string> = {
   strength: 'Força',
@@ -13,23 +14,13 @@ const LABELS: Record<string,string> = {
   luck: 'Sorte',
 };
 
-function resolvePlaceholder(item:any){
-  const t = item?.type?.toLowerCase?.() || '';
-  if(['arma','weapon','sword','axe','bow','dagger','mace'].some(k=> t.includes(k))) return '/images/sword.png';
-  if(['armadura','armor','chest','helm','helmet','boots','greaves','shield'].some(k=> t.includes(k))) return '/images/armor_leather.png';
-  if(['comida','food','meal','poção','potion','consumable'].some(k=> t.includes(k))) return '/images/food.png';
-  return '/images/items/placeholder.png';
-}
-
-function itemImg(it:any){
-  if(!it) return '/images/items/placeholder.png';
-  let img = it.image || resolvePlaceholder(it);
-  if(it.type === 'material'){
-    const fname = (img||'').split('/').pop();
-    img = `/images/items/materials/${fname}`;
-  }
-  return img;
-}
+const DESCRICOES: Record<string,string> = {
+  strength: 'Aumenta o ATK em +2 por ponto.',
+  vitality: 'Aumenta o HP Máx em +10 por ponto.',
+  intelligence: 'Aumenta a Stamina Máx em +3 por ponto.',
+  luck: 'Aumenta chance de crítico.',
+  agility: 'Aumenta velocidade/AGI.',
+};
 
 // soma atributos dos itens equipados
 function getEquipBonuses(equipment:any){
@@ -53,7 +44,7 @@ function getEquipBonuses(equipment:any){
 }
 
 export default function Page(){
-  const { state, increaseAttribute, equip, unequip, useItem,  resetSave } = useGame();
+  const { state, increaseAttribute, equip, unequip, useItem, resetSave } = useGame();
   const player = state.player;
 
   const attrs = Object.entries(player.attributes||{});
@@ -63,41 +54,14 @@ export default function Page(){
   const totalDef = (player.attributes?.vitality||0) + (bonuses.defense||0);
   const totalCrit = (player.attributes?.luck||0) + (bonuses.crit||0);
 
-  // drag helpers
-  const onDragStart = (it:any)=> (e:React.DragEvent)=>{
-    e.dataTransfer.setData('application/json', JSON.stringify(it));
-  };
-  const handleDropOnSlot = (slot:any, payload:any)=>{
-    if(!payload) return;
-    // bloqueia equipamento inválido? validações poderiam ir aqui
-    equip(slot, payload);
-  };
-
   return (
     <div className="p-6 space-y-6 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900 min-h-screen text-white">
       {/* Card do jogador */}
       <div className="rounded-2xl p-6 bg-white/5 backdrop-blur-sm border border-white/10 shadow-lg">
         <div className="flex items-center gap-6">
-          {/* Avatar com drop de consumíveis */}
-          <div
-            onDragOver={(e)=> e.preventDefault()}
-            onDrop={(e)=>{
-              const txt = e.dataTransfer.getData('application/json');
-              if(!txt) return;
-              try{
-                const payload = JSON.parse(txt);
-                const t = (payload?.type||'').toLowerCase();
-                if(['comida','food','meal','poção','potion','consumable'].some(k=> t.includes(k))){
-                  useItem?.(payload);
-                }
-              }catch{}
-            }}
-            className="relative w-24 h-24 rounded-2xl overflow-hidden ring-2 ring-white/20 shrink-0"
-            title="Arraste comida/poção aqui para consumir"
-          >
+          <div className="relative w-24 h-24 rounded-2xl overflow-hidden ring-2 ring-white/20 shrink-0">
             <Image src="/images/avatar.png" alt="Avatar" fill className="object-cover" />
           </div>
-
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <h1 className="text-2xl font-bold truncate">{player.character?.name || player.name || 'Aventureiro'}</h1>
@@ -110,23 +74,23 @@ export default function Page(){
                 <span>{player.xp} / {(player.level*100)}</span>
               </div>
               <div className="h-2 bg-black/30 rounded-full overflow-hidden">
-                <div className="h-2 bg-amber-500" style={{width: `${Math.min(100,(player.xp%(player.level*100))/(player.level*100)*100)}%`}} />
+                <div className="h-2 bg-amber-500 transition-all" style={{width: `${Math.min(100,(player.xp%(player.level*100))/(player.level*100)*100)}%`}} />
               </div>
             </div>
 
-            {/* Status: barras finas + extras */}
+            {/* Status */}
             <div className="mt-4 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <div className="flex justify-between text-xs mb-1"><span>HP</span><span>{player.stats.hp} / {player.stats.maxHp}</span></div>
                   <div className="h-2 bg-black/30 rounded-full overflow-hidden">
-                    <div className="h-2 bg-red-500" style={{width: `${(player.stats.hp/player.stats.maxHp)*100}%`}} />
+                    <div className="h-2 bg-red-500 transition-all" style={{width: `${(player.stats.hp/player.stats.maxHp)*100}%`}} />
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between text-xs mb-1"><span>Stamina</span><span>{player.stamina.current} / {player.stamina.max}</span></div>
                   <div className="h-2 bg-black/30 rounded-full overflow-hidden">
-                    <div className="h-2 bg-emerald-500" style={{width: `${(player.stamina.current/player.stamina.max)*100}%`}} />
+                    <div className="h-2 bg-emerald-500 transition-all" style={{width: `${(player.stamina.current/player.stamina.max)*100}%`}} />
                   </div>
                 </div>
               </div>
@@ -140,53 +104,54 @@ export default function Page(){
         </div>
       </div>
 
-      {/* Equipamentos / PaperDoll */}
-      <div className="rounded-2xl p-6 bg-white/5 border border-white/10">
-        <h3 className="text-lg font-semibold mb-4">Equipamentos</h3>
-        <div className="hidden md:block">
+      {/* Equipamentos + Inventário lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Equipamentos */}
+        <div className="rounded-2xl p-6 bg-white/5 border border-white/10">
+          <h3 className="text-lg font-semibold mb-4">Equipamentos</h3>
           <PaperDoll
             equipment={player.equipment || {}}
-            onDropItem={handleDropOnSlot}
+            onDropItem={(slot,payload)=> equip(slot,payload)}
             onUnequip={(slot)=> unequip(slot as any)}
           />
         </div>
-        <div className="mt-6 md:hidden">
-          <PaperDoll
-            equipment={player.equipment || {}}
-            onDropItem={handleDropOnSlot}
-            onUnequip={(slot)=> unequip(slot as any)}
+
+        {/* Inventário com abas */}
+        <div className="rounded-2xl p-6 bg-white/5 border border-white/10">
+          <h3 className="text-lg font-semibold mb-4">Inventário</h3>
+          <InventoryPanel
+            inventory={{ items: player.inventory || [] }}
+            onEquip={(it)=> equip(it.slot, it)}
+            onUse={useItem}
+            onInspect={(it)=> console.log('Inspect', it)}
           />
         </div>
       </div>
 
-      {/* Atributos */}
+      {/* Atributos com descrições */}
       <div className="rounded-2xl p-6 bg-white/5 border border-white/10">
         <h3 className="text-lg font-semibold mb-3">Atributos</h3>
         <p className="text-xs opacity-80 mb-3">Distribua pontos para evoluir seu personagem.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {attrs.map(([key,val])=> (
-            <div key={key} className="flex items-center justify-between gap-3 text-sm rounded-lg px-3 py-2 bg-white/5 border border-white/10">
-              <span className="capitalize flex items-center gap-2">
-                {key==='strength' && <Dumbbell className="w-4 h-4 opacity-80" />}
-                {key==='agility' && <Zap className="w-4 h-4 opacity-80" />}
-                {key==='intelligence' && <Brain className="w-4 h-4 opacity-80" />}
-                {key==='vitality' && <Shield className="w-4 h-4 opacity-80" />}
-                {key==='luck' && <Star className="w-4 h-4 opacity-80" />}
-                {LABELS[key] || key}: {val as any}
-              </span>
-              {player.statPoints>0 && (
-                <button
-                  className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs shadow-inner active:scale-95 transition"
-                  title={
-                    key==='strength'?'Aumenta ATK em +2':
-                    key==='vitality'?'Aumenta HP Máx em +10':
-                    key==='intelligence'?'Aumenta Stamina Máx em +3':
-                    key==='luck'?'Aumenta chance de crítico':
-                    key==='agility'?'Aumenta velocidade/AGI':''
-                  }
-                  onClick={()=> increaseAttribute(key as any)}
-                >+</button>
-              )}
+            <div key={key} className="flex flex-col gap-1 rounded-lg px-3 py-2 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-slate-700 hover:border-amber-500/50 transition">
+              <div className="flex items-center justify-between">
+                <span className="capitalize flex items-center gap-2 font-semibold">
+                  {key==='strength' && <Dumbbell className="w-4 h-4 text-red-400" />}
+                  {key==='agility' && <Zap className="w-4 h-4 text-yellow-400" />}
+                  {key==='intelligence' && <Brain className="w-4 h-4 text-blue-400" />}
+                  {key==='vitality' && <Shield className="w-4 h-4 text-green-400" />}
+                  {key==='luck' && <Star className="w-4 h-4 text-purple-400" />}
+                  {LABELS[key] || key}: {val as any}
+                </span>
+                {player.statPoints>0 && (
+                  <button
+                    className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs shadow-inner active:scale-95 transition"
+                    onClick={()=> increaseAttribute(key as any)}
+                  >+</button>
+                )}
+              </div>
+              <span className="text-xs opacity-80">{DESCRICOES[key]}</span>
             </div>
           ))}
         </div>
@@ -211,51 +176,15 @@ export default function Page(){
         </div>
       )}
 
-      {/* Inventário */}
-      <div className="rounded-2xl p-6 bg-white/5 border border-white/10">
-        <h3 className="text-lg font-semibold mb-4">Inventário (arraste para equipar)</h3>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-          {(player.inventory as any[]).map((it:any,i:number)=>(
-            <div
-              key={i}
-              draggable
-              onDragStart={onDragStart(it)}
-              className={`relative rounded-xl p-2 flex flex-col items-center justify-center text-center cursor-grab active:cursor-grabbing ring-2 transition group ${
-                it.rarity==='comum'?'ring-gray-400':
-                it.rarity==='incomum'?'ring-green-500':
-                it.rarity==='raro'?'ring-blue-500':
-                it.rarity==='épico'?'ring-purple-500':
-                it.rarity==='lendário'?'ring-orange-500':
-                it.rarity==='mítico'?'ring-yellow-400':'ring-white/10'
-              }`}
-              title={it.name}
-            >
-              <img src={itemImg(it)} alt={it.name} className="w-16 h-16 object-contain" />
-              <div className="text-xs mt-1 line-clamp-1">{it.name}</div>
-              {it.qty && <span className="absolute bottom-1 right-1 text-xs bg-black/60 px-1 rounded">{it.qty}</span>}
-              {(it.atk || it.defense || it.hp) && (
-                <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-black/80 text-white text-xs p-2 rounded opacity-0 group-hover:opacity-100 transition z-10">
-                  {it.atk && <div>⚔️ ATK: {it.atk}</div>}
-                  {it.defense && <div>🛡️ DEF: {it.defense}</div>}
-                  {it.hp && <div>❤️ HP: {it.hp}</div>}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+      {/* Botão de deletar save */}
+      <div className="rounded-2xl p-6 bg-red-900/30 border border-red-700/50 text-center">
+        <button
+          onClick={()=> resetSave()}
+          className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white font-semibold"
+        >
+          Deletar Save (Começar do zero)
+        </button>
       </div>
-
-      
-    {/* Botão de deletar save */}
-<div className="rounded-2xl p-6 bg-red-900/30 border border-red-700/50 text-center">
-  <button
-    onClick={()=> resetSave()}
-    className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white font-semibold"
-  >
-    Deletar Save (Começar do zero)
-  </button>
-</div>
-
-</div>
+    </div>
   );
 }

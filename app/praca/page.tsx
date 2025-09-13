@@ -1,11 +1,12 @@
 'use client';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '@/context/GameProvider_aldor_client';
-import { getPracaMissions } from '@/data/missoes';
+import { getPracaMissions } from '@/data/missoes_praca';
 import {
   Swords, Droplets, Sparkles,
-  Music, Megaphone, ShoppingBag, Flame, Bird, HandCoins, CloudRain, Snowflake, Sun, Leaf
+  Music, Megaphone, ShoppingBag, Flame, Bird, HandCoins,
+  CloudRain, Snowflake, Sun, Leaf
 } from 'lucide-react';
 
 // === Missões ===
@@ -54,8 +55,21 @@ export default function PracaPage() {
   const missions = getPracaMissions();
 
   const handleStartMission = (mission: any) => {
-    dispatch({ type: 'START_MISSION', payload: mission });
+    dispatch({ type: 'START_MISSION', payload: { ...mission, duration: mission.duration || 10 } });
   };
+
+  // missão ativa
+  const activeMission = state.player.status?.find((s: any) => s.type === 'mission');
+
+  // completar missão automaticamente
+  useEffect(() => {
+    if (!activeMission) return;
+    const duration = activeMission.mission.duration || 10;
+    const timer = setTimeout(() => {
+      dispatch({ type: 'COMPLETE_MISSION', payload: { mission: activeMission.mission } });
+    }, duration * 1000);
+    return () => clearTimeout(timer);
+  }, [activeMission, dispatch]);
 
   // === Rumores dinâmicos ===
   const rumors = [
@@ -154,13 +168,35 @@ export default function PracaPage() {
           <NPC icon={Droplets} text="Jogar moeda na fonte." color="text-blue-400" onClick={donateCoin} />
         </div>
 
-        {/* Missões disponíveis */}
-        <h2 className="text-xl font-semibold text-slate-200 mt-6">Tarefas disponíveis</h2>
-        <div className="grid md:grid-cols-3 gap-4">
-          {missions.map((m) => (
-            <MissionCard key={m.id} mission={m} onStart={handleStartMission} />
-          ))}
-        </div>
+        {/* Missões */}
+        {!activeMission && (
+          <>
+            <h2 className="text-xl font-semibold text-slate-200 mt-6">Tarefas disponíveis</h2>
+            <div className="grid md:grid-cols-3 gap-4">
+              {missions.map((m) => (
+                <MissionCard key={m.id} mission={m} onStart={handleStartMission} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Missão ativa */}
+        {activeMission && (
+          <div className="bg-slate-900/70 p-6 rounded-xl shadow-xl text-center">
+            <h2 className="text-xl font-semibold mb-4 text-slate-100">
+              Missão em andamento: {activeMission.mission.name}
+            </h2>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: '100%' }}
+              transition={{ duration: activeMission.mission.duration || 10, ease: 'linear' }}
+              className="h-3 bg-emerald-500 rounded"
+            />
+            <p className="text-xs text-slate-400 mt-2">
+              Concluindo em {activeMission.mission.duration || 10}s...
+            </p>
+          </div>
+        )}
 
         {/* Pássaro animado */}
         <motion.div
