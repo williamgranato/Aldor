@@ -62,6 +62,7 @@ export type GuildState = {
   memberCard?: GuildMemberCard;
   completedQuests: Array<{id:string; at:number}>;
   activeQuests: Quest[];
+  missionAffinity?: Record<string, number>;
 };
 
 export type PlayerState = {

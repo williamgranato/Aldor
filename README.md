@@ -73,7 +73,71 @@ Construído em **Next.js 14 + React 18 + TypeScript + TailwindCSS**.
 - **lucide-react** (ícones)
 - **framer-motion** (animações)
 
----
+
+# Aldor Idle - Atualização do Mercado e Provider
+
+## 📦 O que mudou nesta versão
+
+### GameProvider (`context/GameProvider_aldor_client.tsx`)
+- **Campo `market`** adicionado ao estado inicial para armazenar os itens do mercado diário.
+- **Regen de Stamina**: continua funcionando (+1 a cada 5 segundos).
+- **Novo Regen de HP**: agora o jogador recupera **+1 HP a cada 3 segundos**, até o máximo definido em `stats.maxHp`.
+- Nenhuma função original foi removida, apenas complementada.
+- `addLootToInventory`, `giveCoins` e `touch` permanecem disponíveis para integração com o mercado e outros sistemas.
+
+### Mercado Novo
+Substitui totalmente o antigo sistema baseado em `useDailyMarket`.
+
+- **Arquivos principais**:
+  - `hooks/useMarket.ts`
+  - `components/market/Market.tsx`
+  - `components/market/MarketCard.tsx`
+  - `components/market/MarketModal.tsx`
+  - `components/market/MarketProviderBridge.tsx`
+  - `app/mercado/page.tsx`
+
+- **Lógica**:
+  - Geração de itens **diária** baseada em `world.dateMs` (seed determinística).
+  - Filtra apenas **armas, armaduras, acessórios/joias e consumíveis**.
+  - Cada item tem estoque inicial (1–3 unidades).
+  - Estoque e lista são **persistidos no save** em `state.market[dayKey]`.
+  - Compra:
+    - Deduz moedas do jogador (conversão cobre ⇄ pouch).
+    - Adiciona item ao inventário.
+    - Atualiza estoque persistido.
+    - Dispara autosave (`touch`).
+
+- **Imersão visual** (usa `framer-motion` e `lucide-react`):
+  - **Ambientação dinâmica**: cabeçalho muda narrativa e cor baseada em estação/clima.
+  - **Vitrines do dia**: 1–2 itens podem aparecer com destaque visual (🔥 Oferta).
+  - **Frase do mercador**: contextual (ex.: "Chegou um lote de aço das Montanhas Cinzentas!").
+  - **Ícones por categoria**: armas = sabre, armaduras = shield, acessórios = gem, consumíveis = flask.
+  - **Coleções semanais**: agrupamento temático (visual apenas).
+  - **Histórico de compras**: últimos 3 itens aparecem no rodapé do modal.
+  - **Feedback tátil**: cards dão "pop" ao comprar e ficam esmaecidos se esgotados.
+
+## 🚀 Como atualizar
+1. **Remover arquivos antigos do mercado**:
+   - `hooks/useDailyMarket.ts`
+   - `components/Market.tsx`
+   - `components/MarketCard.tsx`
+   - `components/MarketModal.tsx`
+   - `components/MarketProviderBridge.tsx`
+
+2. **Substituir** pelos novos arquivos incluídos neste patch.
+
+3. **Instalar dependências visuais** (caso ainda não tenha):
+   ```bash
+   npm install framer-motion lucide-react
+   ```
+
+4. **Rodar o jogo** e acessar `/mercado` para ver o novo mercado em ação.
+
+## 🔮 Próximos Passos (opcional)
+- Adicionar **mini vitrines destacadas** no topo do mercado (coleções do dia).
+- Efeitos visuais extras em itens de raridade épica+ (glow animado).
+- Expandir narrativa do mercador para refletir eventos do mundo (missões especiais, feriados etc.).
+
 
 ## 📌 Próximos Passos
 - Molduras visuais no inventário (**parcialmente feito**: já no histórico e no modal).

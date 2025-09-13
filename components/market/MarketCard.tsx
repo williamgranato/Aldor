@@ -1,14 +1,14 @@
 'use client';
 import React from 'react';
 import Image from 'next/image';
-import type { GeneratedMarketItem } from '@/types/market';
+import { GeneratedMarketItem } from '@/hooks/useMarket';
 import { PriceRow } from '@/utils/priceDisplay';
-import * as itemsData from '@/data/items_catalog';
+import { ITEMS } from '@/data/items_catalog';
 import { getItemImagePath } from '@/utils/images';
 
 const itemsCatalog: any[] =
-  (itemsData as any).default ??
-  (Array.isArray(itemsData) ? itemsData : Object.values(itemsData).find(v => Array.isArray(v))) ??
+  (ITEMS as any).default ??
+  (Array.isArray(ITEMS) ? ITEMS : Object.values(ITEMS).find(v => Array.isArray(v))) ??
   [];
 
 type Props = {

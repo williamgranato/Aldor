@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Leaf, Pickaxe, Hourglass, CircleStop, Flame } from 'lucide-react';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import { GATHER_NODES, GatherNode } from '@/data/gather_nodes';
-import { ITEMS_BY_ID } from '@/data/items_catalog';
+import { ITEMS } from '@/data/items_catalog';
 
 type LoopState = { running: boolean; nodeId?: string; nextAt?: number };
 
@@ -18,7 +18,7 @@ function rollYield(node: GatherNode){
     const r = Math.random();
     if((y.chance ?? 1) >= r){
       const qty = y.min + Math.floor(Math.random()*(y.max - y.min + 1));
-      const def = ITEMS_BY_ID[y.itemId];
+      const def = ITEMS[y.itemId];
       drops.push({ id: y.itemId, name: def?.name ?? y.itemId, image: def?.image, qty });
     }
   }

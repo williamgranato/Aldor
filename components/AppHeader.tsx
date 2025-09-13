@@ -20,7 +20,7 @@ export default function AppHeader(){
       <div className="flex items-center gap-3">
         <Link href="/"><img src="/images/logo.png" alt="logo" className="h-8 w-auto"/></Link>
         <div className="flex flex-col">
-          <span className="font-bold drop-shadow-md">{player.character.name}</span>
+          <span className="font-bold drop-shadow-md">{player.name}</span>
           <span className="text-xs text-slate-400 drop-shadow-md">Nível {player.level}</span>
         </div>
       </div>

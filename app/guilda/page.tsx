@@ -4,7 +4,6 @@ import { ScrollText, Award, Users, Star, Zap, Shield, CheckCircle2, XCircle } fr
 import { motion } from 'framer-motion';
 import { useGame } from '@/context/GameProvider_aldor_client';
 import MissionList from '@/components/guild/MissionList';
-import { getGuildMissions } from '@/data/missoes';
 import { useToasts } from '@/components/ToastProvider';
 
 type Rank = 'F'|'E'|'D'|'C'|'B'|'A'|'S'|'SS'|'SSS';

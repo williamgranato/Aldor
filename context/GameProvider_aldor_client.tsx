@@ -33,7 +33,7 @@ const defaultState: GameState = {
     skills: {}
   },
   guild: { isMember:false, completedQuests:[], activeQuests:[], missionAffinity:{}, memberCard: undefined as any },
-  world: { dateMs: Date.now() },
+  world: { dateMs: Date.now(), season: 'verão', weather: 'ensolarado', temperature: 25 },
   ui: { headerStyle: 'modern' }
 };
 
