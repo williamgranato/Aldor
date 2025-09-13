@@ -1,303 +1,171 @@
-"use client";
 
-import React, { useMemo, useState, useEffect, useContext } from "react";
-import { motion } from "framer-motion";
-import { Trees, Pickaxe, Zap, Timer, Gift, Lock, ShieldCheck, Hammer } from "lucide-react";
+'use client';
 
-import {
-  FOREST_RESOURCES,
-  MINE_RESOURCES,
-  type GatheringResource,
-} from "@/data/gathering_catalog";
-import { loadSkills, addSkillXP, type GatheringSkills } from "@/data/gathering_utils";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Leaf, Pickaxe, Hourglass, CircleStop, Flame } from 'lucide-react';
+import { useGame } from '@/context/GameProvider_aldor_client';
+import { GATHER_NODES, GatherNode } from '@/data/gather_nodes';
+import { ITEMS_BY_ID } from '@/data/items_catalog';
 
-// Tipos mínimos para integração suave com seu GameProvider (fallback seguro)
-type GameCtxLike = {
-  player?: { level?: number; stamina?: number };
-  spendStamina?: (n: number) => boolean | void;
-  addLootToInventory?: (loot: { id: string; quantity: number }[]) => void;
-  giveXP?: (n: number) => void;
-};
+type LoopState = { running: boolean; nodeId?: string; nextAt?: number };
 
-// Tentar achar o contexto se existir (sem quebrar caso não exista)
-let GameContext: React.Context<GameCtxLike> | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const maybe = require("@/context/GameContext");
-  GameContext = maybe?.GameContext ?? null;
-} catch { /* noop */ }
+function formatSec(s: number){ return s.toFixed(0)+'s'; }
 
-const useGame = (): GameCtxLike => {
-  if (GameContext) {
-    try {
-      return useContext(GameContext);
-    } catch {
-      return {};
+function rollYield(node: GatherNode){
+  const drops:{id:string; name:string; image?:string; qty:number}[] = [];
+  for(const y of node.yields){
+    const r = Math.random();
+    if((y.chance ?? 1) >= r){
+      const qty = y.min + Math.floor(Math.random()*(y.max - y.min + 1));
+      const def = ITEMS_BY_ID[y.itemId];
+      drops.push({ id: y.itemId, name: def?.name ?? y.itemId, image: def?.image, qty });
     }
   }
-  return {};
-};
-
-function useInterval(callback: () => void, delay: number | null) {
-  useEffect(() => {
-    if (delay === null) return;
-    const id = setInterval(callback, delay);
-    return () => clearInterval(id);
-  }, [callback, delay]);
+  return drops;
 }
 
-type RunState =
-  | { status: "idle" }
-  | { status: "running"; start: number; duration: number; staminaCost: number; res: GatheringResource }
-  | { status: "cooldown"; until: number };
+export default function ColetaPage(){
+  const game = useGame() as any;
+  const [loop, setLoop] = useState<LoopState>({ running:false });
+  const [toast, setToast] = useState<string|null>(null);
+  const timerRef = useRef<NodeJS.Timeout|null>(null);
 
-function ProgressBar({ progress }: { progress: number }) {
-  return (
-    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+  const forest = useMemo(()=>GATHER_NODES.filter(n=>n.source==='forest'),[]);
+  const mines = useMemo(()=>GATHER_NODES.filter(n=>n.source==='mine'),[]);
+  const playerLevel = (game?.state?.player?.level ?? 1);
+
+  function start(node: GatherNode){
+    if(loop.running && loop.nodeId === node.id){ return; }
+    if(playerLevel < node.minLevel){
+      setToast(`Nível ${node.minLevel}+ necessário.`);
+      return;
+    }
+    if(game?.spendStamina && game.state?.player?.stamina < node.staminaCost){
+      setToast('Stamina insuficiente.');
+      return;
+    }
+    setLoop({ running:true, nodeId: node.id, nextAt: Date.now() + node.timeSec*1000 });
+  }
+
+  function stop(){
+    setLoop({ running:false });
+    if(timerRef.current){ clearTimeout(timerRef.current); timerRef.current=null; }
+  }
+
+  useEffect(()=>{
+    if(!loop.running){ return; }
+    const node = GATHER_NODES.find(n=>n.id===loop.nodeId)!;
+    const now = Date.now();
+    const delay = Math.max(0, (loop.nextAt ?? now) - now);
+    timerRef.current = setTimeout(()=>{
+      // spend stamina
+      if(game?.spendStamina){
+        const ok = game.spendStamina(node.staminaCost);
+        if(!ok){
+          setToast('Sem stamina suficiente para continuar.');
+          stop();
+          return;
+        }
+      }
+      // give items
+      const drops = rollYield(node);
+      if(game?.addLootToInventory && drops.length){
+        game.addLootToInventory(drops);
+      }
+      // toast
+      if(drops.length){
+        const line = drops.map(d=>`${d.qty}x ${d.name}`).join(', ');
+        setToast(`Coleta: ${line}`);
+        // history of today
+        try{
+          const key = `gather_history_${new Date().toISOString().slice(0,10)}`;
+          const hist = JSON.parse(localStorage.getItem(key) || '{}');
+          for(const d of drops){
+            hist[d.id] = (hist[d.id]||0) + d.qty;
+          }
+          localStorage.setItem(key, JSON.stringify(hist));
+        }catch{}
+      }
+      // schedule next tick
+      setLoop({ running:true, nodeId: node.id, nextAt: Date.now() + node.timeSec*1000 });
+    }, delay);
+    return ()=>{ if(timerRef.current) clearTimeout(timerRef.current as any); };
+  }, [loop]);
+
+  function NodeCard({n}:{n:GatherNode}){
+    const unlocked = playerLevel >= n.minLevel;
+    const runningThis = loop.running && loop.nodeId===n.id;
+    return (
       <motion.div
-        className="h-full bg-emerald-400"
-        initial={{ width: "0%" }}
-        animate={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-        transition={{ type: "tween", ease: "linear", duration: 0.15 }}
-      />
-    </div>
-  );
-}
-
-function ResourceCard({
-  res,
-  canUse,
-  onGather,
-  running,
-  progress,
-}: {
-  res: GatheringResource;
-  canUse: boolean;
-  onGather: () => void;
-  running: boolean;
-  progress: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: running ? 1.0 : 1.01 }}
-      className={`rounded-2xl p-5 border shadow-lg backdrop-blur-sm
-        ${res.biome === "forest" ? "bg-green-500/5 border-green-400/20" : "bg-sky-500/5 border-sky-400/20"}`}
-    >
-      <div className="flex gap-4 items-start">
-        <img
-          src={res.image}
-          alt={res.name}
-          className="w-16 h-16 rounded-xl object-contain ring-1 ring-white/10 bg-black/20"
-        />
-        <div className="flex-1 space-y-1">
-          <div className="flex items-center gap-2">
-            {res.biome === "forest" ? (
-              <Trees className="w-5 h-5 text-emerald-300" />
-            ) : (
-              <Pickaxe className="w-5 h-5 text-sky-300" />
-            )}
-            <h3 className="text-lg font-semibold">{res.name}</h3>
+        layout
+        className={`rounded-2xl p-4 border bg-white/5 backdrop-blur-sm ${unlocked?'border-white/10':'border-red-500/30 opacity-60'}`}
+        whileHover={{ scale: unlocked?1.01:1 }}
+      >
+        <div className="flex items-center gap-4">
+          <img src={n.image} alt={n.name} className="w-16 h-16 rounded-lg object-contain bg-black/20 p-2"/>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 text-lg font-semibold">
+              {n.source==='forest'?<Leaf className="w-5 h-5"/>:<Pickaxe className="w-5 h-5"/>}
+              <span>{n.name}</span>
+            </div>
+            <p className="text-sm text-zinc-300">{n.description}</p>
+            <div className="mt-2 flex flex-wrap gap-4 text-xs text-zinc-300">
+              <span className="inline-flex items-center gap-1"><Hourglass className="w-4 h-4"/>{formatSec(n.timeSec)}</span>
+              <span className="inline-flex items-center gap-1"><Flame className="w-4 h-4"/>-{n.staminaCost} stamina</span>
+              <span>Nível ≥ {n.minLevel}</span>
+            </div>
           </div>
-          <p className="text-sm text-white/80">{res.description}</p>
-
-          <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Requer Nível {res.reqLevel}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Timer className="w-4 h-4" />
-              <span>{(res.timeMs / 1000).toFixed(1)}s</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4" />
-              <span>-{res.staminaCost} Stamina</span>
-            </div>
-            {res.bonusItemId && (
-              <div className="flex items-center gap-2 col-span-2 md:col-span-1">
-                <Gift className="w-4 h-4" />
-                <span>Chance de bônus {(Math.round((res.bonusChance ?? 0) * 100))}%</span>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-3">
-            {running ? (
-              <ProgressBar progress={progress} />
-            ) : !canUse ? (
-              <div className="inline-flex items-center gap-2 text-amber-300">
-                <Lock className="w-4 h-4" />
-                <span>Você ainda não possui o nível necessário.</span>
-              </div>
+          <div className="flex flex-col gap-2">
+            {!runningThis ? (
+              <button onClick={()=>unlocked && start(n)} className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition text-white">
+                Iniciar coleta
+              </button>
             ) : (
-              <button
-                onClick={onGather}
-                className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 transition
-                           inline-flex items-center gap-2"
-              >
-                <Hammer className="w-4 h-4" />
-                Coletar
+              <button onClick={stop} className="px-3 py-2 rounded-lg bg-red-600 hover:bg-red-500 transition text-white inline-flex items-center gap-1">
+                <CircleStop className="w-4 h-4"/> Parar
               </button>
             )}
           </div>
         </div>
-      </div>
-    </motion.div>
-  );
-}
-
-export default function ColetaPage() {
-  const game = useGame();
-  const playerLevel = game?.player?.level ?? 1;
-  const stamina = game?.player?.stamina ?? 999;
-
-  const [skills, setSkills] = useState<GatheringSkills>(loadSkills());
-  const [run, setRun] = useState<RunState>({ status: "idle" });
-  const [progress, setProgress] = useState(0);
-
-  // Barra de progresso
-  useInterval(() => {
-    if (run.status !== "running") return;
-    const elapsed = Date.now() - run.start;
-    const p = Math.min(100, (elapsed / run.duration) * 100);
-    setProgress(p);
-    if (elapsed >= run.duration) {
-      // finaliza
-      finishRun(run.res, run.staminaCost);
-      setRun({ status: "cooldown", until: Date.now() + 300 });
-      setTimeout(() => setRun({ status: "idle" }), 300);
-    }
-  }, run.status === "running" ? 100 : null);
-
-  const forest = useMemo(
-    () => FOREST_RESOURCES.map(r => ({ r, canUse: playerLevel >= r.reqLevel })),
-    [playerLevel]
-  );
-  const mine = useMemo(
-    () => MINE_RESOURCES.map(r => ({ r, canUse: playerLevel >= r.reqLevel })),
-    [playerLevel]
-  );
-
-  function startGather(res: GatheringResource) {
-    if (run.status !== "idle") return;
-    if (playerLevel < res.reqLevel) return;
-    if ((game?.player?.stamina ?? 0) < res.staminaCost) return;
-
-    // tenta gastar stamina pelo provider; se não houver, segue localmente
-    try {
-      const ok = game?.spendStamina?.(res.staminaCost);
-      if (ok === false) return;
-    } catch { /* noop */ }
-
-    setRun({ status: "running", start: Date.now(), duration: res.timeMs, staminaCost: res.staminaCost, res });
-  }
-
-  function finishRun(res: GatheringResource, spent: number) {
-    // Sucesso/falha crítica
-    const roll = Math.random();
-    let qty = res.qtyMin + Math.floor(Math.random() * (res.qtyMax - res.qtyMin + 1));
-    let narrative = "Coleta concluída.";
-
-    if (roll < 0.05) {
-      // falha crítica: stamina já foi gasta, sem loot
-      narrative = "A lâmina desafinou e a chance passou. Nada coletado desta vez.";
-      // devolve parte da stamina? opcional: não.
-      // retorna cedo
-      toast(narrative);
-      return;
-    }
-    if (roll > 0.9) {
-      qty *= 2;
-      narrative = "Golpe perfeito! Você extraiu o dobro de recursos.";
-    }
-
-    // Loot principal
-    const loot: { id: string; quantity: number }[] = [{ id: res.id, quantity: qty }];
-
-    // Bônus
-    if (res.bonusItemId && Math.random() < (res.bonusChance ?? 0)) {
-      loot.push({ id: res.bonusItemId, quantity: 1 });
-      narrative += " (Bônus raro encontrado!)";
-    }
-
-    // Entrega no inventário via provider
-    try { game?.addLootToInventory?.(loot); } catch {}
-
-    // XP de skill
-    const updated = addSkillXP(skills, res.skill, res.xpSkill);
-    setSkills(updated);
-
-    // XP geral do player se disponível
-    try { game?.giveXP?.(res.xpPlayer); } catch {}
-
-    toast(narrative);
-  }
-
-  function toast(msg: string) {
-    // toast simples usando alert; seu projeto pode usar um componente próprio.
-    if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-alert
-      console.log("[Coleta]", msg);
-    }
+      </motion.div>
+    );
   }
 
   return (
-    <div className="p-6 space-y-8 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900 min-h-screen text-white">
-      <header className="space-y-2">
+    <div className="p-6 space-y-8 text-white">
+      <div>
         <h1 className="text-2xl font-bold">Coleta</h1>
-        <p className="text-white/80 max-w-3xl">
-          A floresta sussurra e as minas ecoam. Seu machado e sua picareta contam histórias no ritmo da sua
-          stamina — cada golpe rende experiência, recursos e, às vezes, pequenas bênçãos da sorte.
-        </p>
-      </header>
+        <p className="text-zinc-300">Corte árvores, desça às minas e troque suor por matéria-prima. A natureza de Aldor é generosa com aventureiros persistentes.</p>
+      </div>
 
-      {/* FLORESTA */}
       <section className="space-y-3">
-        <div className="flex items-center gap-3">
-          <Trees className="w-6 h-6 text-emerald-300" />
-          <h2 className="text-xl font-semibold">Floresta</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {forest.map(({ r, canUse }) => (
-            <ResourceCard
-              key={r.id}
-              res={r}
-              canUse={canUse && stamina >= r.staminaCost}
-              onGather={() => startGather(r)}
-              running={run.status === "running" && run.res.id === r.id}
-              progress={run.status === "running" && run.res.id === r.id ? progress : 0}
-            />
-          ))}
+        <h2 className="text-xl font-semibold flex items-center gap-2"><Leaf className="w-5 h-5"/> Floresta</h2>
+        <div className="grid gap-3">
+          {forest.map(n=><NodeCard key={n.id} n={n}/>)}
         </div>
       </section>
 
-      {/* MINAS */}
       <section className="space-y-3">
-        <div className="flex items-center gap-3">
-          <Pickaxe className="w-6 h-6 text-sky-300" />
-          <h2 className="text-xl font-semibold">Minas</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {mine.map(({ r, canUse }) => (
-            <ResourceCard
-              key={r.id}
-              res={r}
-              canUse={canUse && stamina >= r.staminaCost}
-              onGather={() => startGather(r)}
-              running={run.status === "running" && run.res.id === r.id}
-              progress={run.status === "running" && run.res.id === r.id ? progress : 0}
-            />
-          ))}
+        <h2 className="text-xl font-semibold flex items-center gap-2"><Pickaxe className="w-5 h-5"/> Minas</h2>
+        <div className="grid gap-3">
+          {mines.map(n=><NodeCard key={n.id} n={n}/>)}
         </div>
       </section>
 
-      {/* Rodapé narrativo */}
-      <footer className="pt-6 text-sm text-white/70 max-w-3xl">
-        Ferramentas afiadas, mente atenta. Quanto mais você colhe, mais afiados ficam os seus sentidos —
-        e um dia a madeira vai cantar e o minério vai brilhar antes mesmo da primeira pancada.
-      </footer>
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 40, opacity: 0 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black/80 px-4 py-2 rounded-lg border border-white/10 shadow-lg"
+            onAnimationComplete={()=>{ setTimeout(()=>setToast(null), 1600); }}
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
