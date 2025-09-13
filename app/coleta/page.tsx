@@ -1,245 +1,303 @@
-'use client';
+"use client";
 
-import React, { useEffect, useMemo, useState } from 'react'
-import Image from 'next/image'
-import { motion } from 'framer-motion'
-import { Trees, Pickaxe, Zap, Timer, Gift, Lock } from 'lucide-react'
+import React, { useMemo, useState, useEffect, useContext } from "react";
+import { motion } from "framer-motion";
+import { Trees, Pickaxe, Zap, Timer, Gift, Lock, ShieldCheck, Hammer } from "lucide-react";
 
-// Game context (não quebra se o caminho variar)
-let GameContext: any = null
+import {
+  FOREST_RESOURCES,
+  MINE_RESOURCES,
+  type GatheringResource,
+} from "@/data/gathering_catalog";
+import { loadSkills, addSkillXP, type GatheringSkills } from "@/data/gathering_utils";
+
+// Tipos mínimos para integração suave com seu GameProvider (fallback seguro)
+type GameCtxLike = {
+  player?: { level?: number; stamina?: number };
+  spendStamina?: (n: number) => boolean | void;
+  addLootToInventory?: (loot: { id: string; quantity: number }[]) => void;
+  giveXP?: (n: number) => void;
+};
+
+// Tentar achar o contexto se existir (sem quebrar caso não exista)
+let GameContext: React.Context<GameCtxLike> | null = null;
 try {
-  // ajuste o caminho se seu projeto usar alias
-  // @ts-ignore
-  GameContext = require('../../context/GameProvider_aldor_client').GameContext
-} catch {}
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const maybe = require("@/context/GameContext");
+  GameContext = maybe?.GameContext ?? null;
+} catch { /* noop */ }
 
-import { GATHERING_RESOURCES, type GatheringResource } from '../../data/gathering_catalog'
-import { addSkillXp, loadSkills, type GatheringSkill } from '../../data/gathering_utils'
+const useGame = (): GameCtxLike => {
+  if (GameContext) {
+    try {
+      return useContext(GameContext);
+    } catch {
+      return {};
+    }
+  }
+  return {};
+};
 
-type CtxType = {
-  state?: any
-  giveXP?: (n: number)=>void
-  addLootToInventory?: (items: any[])=>void
-  spendStamina?: (n: number)=>boolean
+function useInterval(callback: () => void, delay: number | null) {
+  useEffect(() => {
+    if (delay === null) return;
+    const id = setInterval(callback, delay);
+    return () => clearInterval(id);
+  }, [callback, delay]);
 }
 
-function useGameCtx(): CtxType {
-  // fallback seguro se o contexto não existir
-  const ReactCtx = (GameContext ? React.useContext(GameContext) : {})
-  return ReactCtx || {}
-}
+type RunState =
+  | { status: "idle" }
+  | { status: "running"; start: number; duration: number; staminaCost: number; res: GatheringResource }
+  | { status: "cooldown"; until: number };
 
 function ProgressBar({ progress }: { progress: number }) {
   return (
-    <div className="w-full h-2 bg-white/10 rounded">
-      <div
-        className="h-2 bg-emerald-500 rounded transition-all"
-        style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+      <motion.div
+        className="h-full bg-emerald-400"
+        initial={{ width: "0%" }}
+        animate={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+        transition={{ type: "tween", ease: "linear", duration: 0.15 }}
       />
     </div>
-  )
+  );
 }
 
 function ResourceCard({
   res,
-  locked,
-  onCollect
+  canUse,
+  onGather,
+  running,
+  progress,
 }: {
-  res: GatheringResource
-  locked: boolean
-  onCollect: (res: GatheringResource) => void
+  res: GatheringResource;
+  canUse: boolean;
+  onGather: () => void;
+  running: boolean;
+  progress: number;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: locked ? 1 : 1.02 }}
-      transition={{ type: 'spring', stiffness: 120, damping: 14 }}
-      className={`relative rounded-xl border border-white/10 p-4 bg-white/5 backdrop-blur-sm shadow-md ${locked ? 'opacity-60' : ''}`}
+      whileHover={{ scale: running ? 1.0 : 1.01 }}
+      className={`rounded-2xl p-5 border shadow-lg backdrop-blur-sm
+        ${res.biome === "forest" ? "bg-green-500/5 border-green-400/20" : "bg-sky-500/5 border-sky-400/20"}`}
     >
-      <div className="flex gap-3 items-start">
-        <div className="w-14 h-14 relative shrink-0 rounded-lg overflow-hidden border border-white/10 bg-black/30">
-          <Image src={res.image} alt={res.name} fill sizes="56px" className="object-contain p-1" />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <div className="font-semibold">{res.name}</div>
-            <span className="text-xs text-white/60 flex items-center gap-1">{locked && <Lock size={14}/>}Lv {res.reqLevel}</span>
+      <div className="flex gap-4 items-start">
+        <img
+          src={res.image}
+          alt={res.name}
+          className="w-16 h-16 rounded-xl object-contain ring-1 ring-white/10 bg-black/20"
+        />
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center gap-2">
+            {res.biome === "forest" ? (
+              <Trees className="w-5 h-5 text-emerald-300" />
+            ) : (
+              <Pickaxe className="w-5 h-5 text-sky-300" />
+            )}
+            <h3 className="text-lg font-semibold">{res.name}</h3>
           </div>
-          <p className="text-sm text-white/80">{res.desc}</p>
-          <div className="mt-2 text-xs text-white/70 flex flex-wrap gap-x-3 gap-y-1">
-            <span className="inline-flex items-center gap-1"><Timer size={14}/> {res.timeMs/1000}s</span>
-            <span className="inline-flex items-center gap-1"><Zap size={14}/> {res.staminaCost}</span>
-            <span>Qty {res.qtyMin}-{res.qtyMax}</span>
-            {res.bonusItemId ? (
-              <span className="inline-flex items-center gap-1"><Gift size={14}/> {Math.round((res.bonusChance ?? 0)*100)}%</span>
-            ) : null}
+          <p className="text-sm text-white/80">{res.description}</p>
+
+          <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Requer Nível {res.reqLevel}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Timer className="w-4 h-4" />
+              <span>{(res.timeMs / 1000).toFixed(1)}s</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4" />
+              <span>-{res.staminaCost} Stamina</span>
+            </div>
+            {res.bonusItemId && (
+              <div className="flex items-center gap-2 col-span-2 md:col-span-1">
+                <Gift className="w-4 h-4" />
+                <span>Chance de bônus {(Math.round((res.bonusChance ?? 0) * 100))}%</span>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-3">
+            {running ? (
+              <ProgressBar progress={progress} />
+            ) : !canUse ? (
+              <div className="inline-flex items-center gap-2 text-amber-300">
+                <Lock className="w-4 h-4" />
+                <span>Você ainda não possui o nível necessário.</span>
+              </div>
+            ) : (
+              <button
+                onClick={onGather}
+                className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 transition
+                           inline-flex items-center gap-2"
+              >
+                <Hammer className="w-4 h-4" />
+                Coletar
+              </button>
+            )}
           </div>
         </div>
       </div>
-      <button
-        disabled={locked}
-        onClick={()=>onCollect(res)}
-        className="mt-3 w-full rounded-lg px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-      >
-        {locked ? `Desbloqueia no nível ${res.reqLevel}` : 'Coletar'}
-      </button>
     </motion.div>
-  )
-}
-
-function Section({
-  title,
-  icon,
-  group,
-  playerLevel,
-  onCollect
-}: {
-  title: string
-  icon: React.ReactNode
-  group: 'wood' | 'ore'
-  playerLevel: number
-  onCollect: (res: GatheringResource) => void
-}) {
-  const list = useMemo(
-    () => GATHERING_RESOURCES.filter(r => r.group === group).sort((a,b)=>a.reqLevel-b.reqLevel),
-    [group]
-  )
-
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2">
-        {icon}
-        <h2 className="text-xl font-semibold">{title}</h2>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {list.map(res => {
-          const locked = playerLevel < res.reqLevel
-          return (
-            <ResourceCard key={res.itemId} res={res} locked={locked} onCollect={onCollect} />
-          )
-        })}
-      </div>
-    </section>
-  )
+  );
 }
 
 export default function ColetaPage() {
-  const ctx = useGameCtx()
-  const playerLevel = ctx?.state?.player?.level ?? ctx?.state?.playerLevel ?? 1
-  const stamina = ctx?.state?.stamina ?? ctx?.state?.player?.stamina ?? 100
+  const game = useGame();
+  const playerLevel = game?.player?.level ?? 1;
+  const stamina = game?.player?.stamina ?? 999;
 
-  const [progress, setProgress] = useState(0)
-  const [working, setWorking] = useState<GatheringResource | null>(null)
-  const [skills, setSkills] = useState(loadSkills())
+  const [skills, setSkills] = useState<GatheringSkills>(loadSkills());
+  const [run, setRun] = useState<RunState>({ status: "idle" });
+  const [progress, setProgress] = useState(0);
 
-  useEffect(()=>{
-    let id: any
-    if (working) {
-      const start = Date.now()
-      const run = () => {
-        const elapsed = Date.now() - start
-        const pct = (elapsed / working.timeMs) * 100
-        if (pct >= 100) {
-          setProgress(100)
-          const finished = working
-          setWorking(null)
-          // entrega loot
-          finishCollect(finished)
-          return
-        }
-        setProgress(pct)
-        id = requestAnimationFrame(run)
-      }
-      id = requestAnimationFrame(run)
-    } else {
-      setProgress(0)
+  // Barra de progresso
+  useInterval(() => {
+    if (run.status !== "running") return;
+    const elapsed = Date.now() - run.start;
+    const p = Math.min(100, (elapsed / run.duration) * 100);
+    setProgress(p);
+    if (elapsed >= run.duration) {
+      // finaliza
+      finishRun(run.res, run.staminaCost);
+      setRun({ status: "cooldown", until: Date.now() + 300 });
+      setTimeout(() => setRun({ status: "idle" }), 300);
     }
-    return ()=> cancelAnimationFrame(id)
-  }, [working])
+  }, run.status === "running" ? 100 : null);
 
-  function finishCollect(res: GatheringResource) {
-    // Quantidade
-    const qty = Math.floor(Math.random()*(res.qtyMax - res.qtyMin + 1)) + res.qtyMin
-    const items = [{ id: res.itemId, quantity: qty }]
-    // Bonus
-    if (res.bonusItemId && Math.random() < (res.bonusChance ?? 0)) {
-      items.push({ id: res.bonusItemId, quantity: 1 })
-    }
-    // Inventário do jogo (se existir)
-    ctx?.addLootToInventory?.(items)
-    // XP geral (opcional)
-    ctx?.giveXP?.(Math.max(1, Math.floor(res.timeMs/2000)))
-    // Skills locais
-    const skill: GatheringSkill = (res.group === 'wood' ? 'woodcutting' : 'mining')
-    const updated = addSkillXp(skill, Math.max(5, Math.floor(res.timeMs/1000)))
-    setSkills(updated)
+  const forest = useMemo(
+    () => FOREST_RESOURCES.map(r => ({ r, canUse: playerLevel >= r.reqLevel })),
+    [playerLevel]
+  );
+  const mine = useMemo(
+    () => MINE_RESOURCES.map(r => ({ r, canUse: playerLevel >= r.reqLevel })),
+    [playerLevel]
+  );
+
+  function startGather(res: GatheringResource) {
+    if (run.status !== "idle") return;
+    if (playerLevel < res.reqLevel) return;
+    if ((game?.player?.stamina ?? 0) < res.staminaCost) return;
+
+    // tenta gastar stamina pelo provider; se não houver, segue localmente
+    try {
+      const ok = game?.spendStamina?.(res.staminaCost);
+      if (ok === false) return;
+    } catch { /* noop */ }
+
+    setRun({ status: "running", start: Date.now(), duration: res.timeMs, staminaCost: res.staminaCost, res });
   }
 
-  function startCollect(res: GatheringResource) {
-    // stamina custo
-    if (ctx?.spendStamina && stamina < res.staminaCost) {
-      alert('Stamina insuficiente.')
-      return
+  function finishRun(res: GatheringResource, spent: number) {
+    // Sucesso/falha crítica
+    const roll = Math.random();
+    let qty = res.qtyMin + Math.floor(Math.random() * (res.qtyMax - res.qtyMin + 1));
+    let narrative = "Coleta concluída.";
+
+    if (roll < 0.05) {
+      // falha crítica: stamina já foi gasta, sem loot
+      narrative = "A lâmina desafinou e a chance passou. Nada coletado desta vez.";
+      // devolve parte da stamina? opcional: não.
+      // retorna cedo
+      toast(narrative);
+      return;
     }
-    ctx?.spendStamina?.(res.staminaCost)
-    setWorking(res)
+    if (roll > 0.9) {
+      qty *= 2;
+      narrative = "Golpe perfeito! Você extraiu o dobro de recursos.";
+    }
+
+    // Loot principal
+    const loot: { id: string; quantity: number }[] = [{ id: res.id, quantity: qty }];
+
+    // Bônus
+    if (res.bonusItemId && Math.random() < (res.bonusChance ?? 0)) {
+      loot.push({ id: res.bonusItemId, quantity: 1 });
+      narrative += " (Bônus raro encontrado!)";
+    }
+
+    // Entrega no inventário via provider
+    try { game?.addLootToInventory?.(loot); } catch {}
+
+    // XP de skill
+    const updated = addSkillXP(skills, res.skill, res.xpSkill);
+    setSkills(updated);
+
+    // XP geral do player se disponível
+    try { game?.giveXP?.(res.xpPlayer); } catch {}
+
+    toast(narrative);
+  }
+
+  function toast(msg: string) {
+    // toast simples usando alert; seu projeto pode usar um componente próprio.
+    if (typeof window !== "undefined") {
+      // eslint-disable-next-line no-alert
+      console.log("[Coleta]", msg);
+    }
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900 min-h-screen text-white">
-      <header className="flex items-center justify-between">
+    <div className="p-6 space-y-8 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900 min-h-screen text-white">
+      <header className="space-y-2">
         <h1 className="text-2xl font-bold">Coleta</h1>
-        <div className="flex gap-4 text-sm">
-          <span>Jogador: Lv {playerLevel}</span>
-          <span>Stamina: {stamina}</span>
-          <span>Madeireiro Lv {skills.woodcutting.level} ({skills.woodcutting.xp}/ {skills.woodcutting.level*100})</span>
-          <span>Minerador Lv {skills.mining.level} ({skills.mining.xp}/ {skills.mining.level*100})</span>
-        </div>
+        <p className="text-white/80 max-w-3xl">
+          A floresta sussurra e as minas ecoam. Seu machado e sua picareta contam histórias no ritmo da sua
+          stamina — cada golpe rende experiência, recursos e, às vezes, pequenas bênçãos da sorte.
+        </p>
       </header>
 
-      {working && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="rounded-xl border border-white/10 p-4 bg-white/5 backdrop-blur-sm shadow"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 relative">
-              <Image src={working.image} alt={working.name} fill sizes="32px" className="object-contain" />
-            </div>
-            <div className="font-medium">Coletando {working.name}...</div>
-          </div>
-          <div className="mt-3">
-            <ProgressBar progress={progress} />
-          </div>
-        </motion.div>
-      )}
+      {/* FLORESTA */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <Trees className="w-6 h-6 text-emerald-300" />
+          <h2 className="text-xl font-semibold">Floresta</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {forest.map(({ r, canUse }) => (
+            <ResourceCard
+              key={r.id}
+              res={r}
+              canUse={canUse && stamina >= r.staminaCost}
+              onGather={() => startGather(r)}
+              running={run.status === "running" && run.res.id === r.id}
+              progress={run.status === "running" && run.res.id === r.id ? progress : 0}
+            />
+          ))}
+        </div>
+      </section>
 
-      {/* Floresta em cima */}
-      <Section
-        title="Floresta"
-        icon={<Trees className="text-emerald-400" size={20}/>}
-        group="wood"
-        playerLevel={playerLevel}
-        onCollect={startCollect}
-      />
+      {/* MINAS */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <Pickaxe className="w-6 h-6 text-sky-300" />
+          <h2 className="text-xl font-semibold">Minas</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {mine.map(({ r, canUse }) => (
+            <ResourceCard
+              key={r.id}
+              res={r}
+              canUse={canUse && stamina >= r.staminaCost}
+              onGather={() => startGather(r)}
+              running={run.status === "running" && run.res.id === r.id}
+              progress={run.status === "running" && run.res.id === r.id ? progress : 0}
+            />
+          ))}
+        </div>
+      </section>
 
-      {/* Minas em baixo */}
-      <Section
-        title="Minas"
-        icon={<Pickaxe className="text-cyan-400" size={20}/>}
-        group="ore"
-        playerLevel={playerLevel}
-        onCollect={startCollect}
-      />
-
-      <footer className="text-sm text-white/70 leading-relaxed">
-        As florestas de Aldor sussurram com vida antiga e resina fresca — madeiras raras escondem bônus valiosos
-        para artesãos atentos. Nas entranhas das montanhas, veios metálicos ecoam marteladas do futuro: cada extração
-        consome sua energia, mas alimenta habilidades, experiência e a economia local. Gerencie sua stamina,
-        suba de nível e transforme recursos brutos em lendas forjadas.
+      {/* Rodapé narrativo */}
+      <footer className="pt-6 text-sm text-white/70 max-w-3xl">
+        Ferramentas afiadas, mente atenta. Quanto mais você colhe, mais afiados ficam os seus sentidos —
+        e um dia a madeira vai cantar e o minério vai brilhar antes mesmo da primeira pancada.
       </footer>
     </div>
-  )
+  );
 }
